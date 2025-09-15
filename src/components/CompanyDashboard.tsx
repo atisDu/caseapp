@@ -98,7 +98,7 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
             {language === 'lv' ? 'Pasūtījumu pārvaldība' : 'Order Management'}
           </TabsTrigger>
           <TabsTrigger value="analytics">
-            {language === 'lv' ? 'Analītikas' : 'Analytics'}
+            {language === 'lv' ? 'Sīkāki dati' : 'Analytics'}
           </TabsTrigger>
         </TabsList>
 
@@ -325,7 +325,7 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
         <TabsContent value="analytics" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Business Analytics</CardTitle>
+              <CardTitle>{language === 'lv' ? 'Uzņemuma analīze' : 'Business analytics'}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
