@@ -1,0 +1,241 @@
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Badge } from './ui/badge';
+import { Separator } from './ui/separator';
+import { Design, Order, User } from '../App';
+import { User as UserIcon, Package, Palette, ShoppingCart, Calendar, Edit2, Save, X } from 'lucide-react';
+import { PhoneCaseMockup } from './PhoneCaseMockup';
+import { Language, t } from '../utils/translations';
+
+interface UserProfileProps {
+  user: User;
+  onUpdateUser: (user: User) => void;
+  designs: Design[];
+  orders: Order[];
+  language: Language;
+}
+
+export function UserProfile({ user, onUpdateUser, designs, orders, language }: UserProfileProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedUser, setEditedUser] = useState(user);
+
+  const handleSave = () => {
+    onUpdateUser(editedUser);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedUser(user);
+    setIsEditing(false);
+  };
+
+  const totalSpent = orders.reduce((sum, order) => sum + order.totalPrice, 0);
+  const recentOrders = orders.slice(-3).reverse();
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">User Profile</h2>
+        <p className="text-muted-foreground">Manage your account and view your activity</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Profile Information */}
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserIcon className="w-5 h-5" />
+                Profile Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isEditing ? (
+                <>
+                  <div>
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      value={editedUser.name}
+                      onChange={(e) => setEditedUser(prev => ({ ...prev, name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={editedUser.email}
+                      onChange={(e) => setEditedUser(prev => ({ ...prev, email: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button onClick={handleSave} size="sm" className="flex-1 flex items-center gap-1">
+                      <Save className="w-3 h-3" />
+                      Save
+                    </Button>
+                    <Button onClick={handleCancel} variant="outline" size="sm" className="flex-1 flex items-center gap-1">
+                      <X className="w-3 h-3" />
+                      Cancel
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
+                      <UserIcon className="w-8 h-8 text-primary-foreground" />
+                    </div>
+                    <h3 className="font-semibold">{user.name}</h3>
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                    {user.isAdmin && (
+                      <Badge variant="destructive" className="mt-2">
+                        Administrator
+                      </Badge>
+                    )}
+                  </div>
+                  <Button 
+                    onClick={() => setIsEditing(true)} 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full flex items-center gap-1"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                    Edit Profile
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Stats */}
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>Account Stats</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">Designs Created</span>
+                </div>
+                <Badge variant="secondary">{designs.length}</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">Orders Placed</span>
+                </div>
+                <Badge variant="secondary">{orders.length}</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">Total Spent</span>
+                </div>
+                <Badge variant="secondary">${totalSpent.toFixed(2)}</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Recent Designs */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="w-5 h-5" />
+                Recent Designs
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {designs.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">No designs created yet</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {designs.slice(-4).reverse().map((design) => (
+                    <div key={design.id} className="flex gap-3 p-3 border rounded-lg">
+                      <div className="w-12 h-16 bg-muted rounded overflow-hidden shrink-0">
+                        <PhoneCaseMockup
+                          phoneModel={design.phoneModel}
+                          designImage={design.imageDataUrl}
+                          className="w-full h-full"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium truncate">{design.name}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {design.phoneModel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(design.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Orders */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5" />
+                Recent Orders
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {orders.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">No orders placed yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {recentOrders.map((order) => (
+                    <div key={order.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                      <div className="w-12 h-16 bg-muted rounded overflow-hidden shrink-0">
+                        <PhoneCaseMockup
+                          phoneModel={order.design.phoneModel}
+                          designImage={order.design.imageDataUrl}
+                          className="w-full h-full"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="font-medium">{order.design.name}</h4>
+                            <p className="text-xs text-muted-foreground">Order #{order.id}</p>
+                          </div>
+                          <Badge 
+                            variant={
+                              order.status === 'delivered' ? 'default' :
+                              order.status === 'shipped' ? 'secondary' :
+                              order.status === 'processing' ? 'outline' : 'secondary'
+                            }
+                            className="text-xs"
+                          >
+                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                          <span>${order.totalPrice.toFixed(2)}</span>
+                          <span>Qty: {order.quantity}</span>
+                          <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
