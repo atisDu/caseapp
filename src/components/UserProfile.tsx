@@ -161,19 +161,19 @@ export function UserProfile({ user, onUpdateUser, designs, orders, language }: U
                     <div key={design.id} className="flex gap-3 p-3 border rounded-lg">
                       <div className="w-12 h-16 bg-muted rounded overflow-hidden shrink-0">
                         <PhoneCaseMockup
-                          phoneModel={design.phoneModel}
-                          designImage={design.imageDataUrl}
+                          phoneModel={design.phone_model}
+                          designImage={design.image_url}
                           className="w-full h-full"
                         />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium truncate">{design.name}</h4>
                         <p className="text-xs text-muted-foreground">
-                          {design.phoneModel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          {(design.phone_model || '').replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </p>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                           <Calendar className="w-3 h-3" />
-                          {new Date(design.createdAt).toLocaleDateString()}
+                          {new Date(design.created_at || Date.now()).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
@@ -200,8 +200,8 @@ export function UserProfile({ user, onUpdateUser, designs, orders, language }: U
                     <div key={order.id} className="flex items-center gap-3 p-3 border rounded-lg">
                       <div className="w-12 h-16 bg-muted rounded overflow-hidden shrink-0">
                         <PhoneCaseMockup
-                          phoneModel={order.design.phoneModel}
-                          designImage={order.design.imageDataUrl}
+                          phoneModel={order.design.phone_model}
+                          designImage={order.design.image_url}
                           className="w-full h-full"
                         />
                       </div>

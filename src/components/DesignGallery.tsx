@@ -1,8 +1,8 @@
-import React from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Design } from '../App';
+import { Design } from '../types/design';
 import { Eye, Trash2, Edit, Calendar, ShoppingCart } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { PhoneCaseMockup } from './PhoneCaseMockup';
@@ -47,8 +47,8 @@ export function DesignGallery({ designs, onLoadDesign, onDeleteDesign, onOrderDe
                 <CardContent className="p-4">
                   <div className="aspect-[3/4] bg-muted rounded-lg mb-3 overflow-hidden relative">
                     <PhoneCaseMockup
-                      phoneModel={design.phoneModel}
-                      designImage={design.imageDataUrl}
+                      phoneModel={design.phone_model}
+                      designImage={design.image_url}
                       className="w-full h-full"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
@@ -60,12 +60,12 @@ export function DesignGallery({ designs, onLoadDesign, onDeleteDesign, onOrderDe
                     </div>
                     
                     <Badge variant="secondary" className="text-xs">
-                      {design.phoneModel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      {(design.phone_model || '').replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </Badge>
                     
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Calendar className="w-3 h-3" />
-                      {new Date(design.createdAt).toLocaleDateString()}
+                      {new Date(design.created_at || Date.now()).toLocaleDateString()}
                     </div>
                     
                     <div className="space-y-2 pt-2">

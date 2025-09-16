@@ -20,6 +20,8 @@ export const translations = {
     designName: 'Dizaina nosaukums',
     enterDesignName: 'Ievadiet dizaina nosaukumu',
     phoneModel: 'Telefona modelis',
+    material: 'Materiāls',
+    selectMaterial: 'Izvēlieties materiālu',
     selectPhoneModel: 'Izvēlieties telefona modeli',
     designMethod: 'Dizaina metode',
     uploadImage: 'Augšupielādēt attēlu',
@@ -115,6 +117,10 @@ export const translations = {
     customerDetails: 'Klienta informācija',
     phoneCase: 'Telefona vāciņš',
     
+    // Materials
+    'tpu-gel': 'TPU/Gel',
+
+
     // Phone Models
     'iphone-15-pro': 'iPhone 15 Pro',
     'iphone-15': 'iPhone 15',
@@ -159,6 +165,8 @@ export const translations = {
     enterDesignName: 'Enter design name',
     phoneModel: 'Phone Model',
     selectPhoneModel: 'Select phone model',
+    material: 'Material',
+    selectMaterial: 'Select material',
     designMethod: 'Design Method',
     uploadImage: 'Upload Image',
     draw: 'Draw',

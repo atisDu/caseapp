@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -9,10 +9,16 @@ import { DrawingCanvas } from './DrawingCanvas';
 import { OrderPreview } from './OrderPreview';
 import { DesignGallery } from './DesignGallery';
 import { PhoneCaseMockup } from './PhoneCaseMockup';
-import { Design, Order, User } from '../App';
+import { Order, User } from '../App';
+import { AppDesign, convertAppDesign, convertSupabaseDesign } from '../types/app-design';
+import { format } from 'date-fns';
 import { Upload, Palette, Eye, ShoppingCart, Save, Plus } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Language, t } from '../utils/translations';
+import { createDesign, getDesigns, supabase } from '../utils/supabase/client';
+import { Design, DesignData } from '../types/design';
+
+const MATERIALS = [{ id: 'tpu-gel', name: 'TPU/Gel'}];
 
 const PHONE_MODELS = [
   { id: 'iphone-15-pro', name: 'iPhone 15 Pro', price: 29.99 },
@@ -27,10 +33,10 @@ const PHONE_MODELS = [
 
 interface DesignStudioProps {
   designs: Design[];
-  onAddDesign: (design: Design) => void;
+  onAddDesign: (designs: Design[]) => void;
   onUpdateDesign: (designId: string, updates: Partial<Design>) => void;
   onDeleteDesign: (designId: string) => void;
-  onCreateOrder: (order: Order) => void;
+  onCreateOrder: (orderId: string) => void;
   currentUser: User;
   language: Language;
 }
@@ -45,16 +51,27 @@ export function DesignStudio({
   language
 }: DesignStudioProps) {
   const [currentDesign, setCurrentDesign] = useState<Design | null>(null);
-  const [designName, setDesignName] = useState('');
-  const [selectedPhoneModel, setSelectedPhoneModel] = useState('');
+  const [designName, setDesignName] = useState<string>('');
+  const [selectedPhoneModel, setSelectedPhoneModel] = useState<string>(PHONE_MODELS[0].id);
+  const [selectedMaterial, setSelectedMaterial] = useState<string>('tpu-gel');
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [showDrawing, setShowDrawing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    const loadDesigns = async () => {
+      if (currentUser) {
+        const userDesigns = await getDesigns(currentUser.id);
+        onAddDesign(userDesigns);
+      }
+    };
+    loadDesigns();
+  }, [currentUser]);
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
+    if (file && currentUser) {
       const reader = new FileReader();
       reader.onload = (e) => {
         const imageDataUrl = e.target?.result as string;
@@ -64,46 +81,44 @@ export function DesignStudio({
     }
   };
 
-  const handleSaveDesign = (canvasDataUrl?: string) => {
-    if (!designName || !selectedPhoneModel) {
-      alert('Please provide a design name and select a phone model');
-      return;
-    }
-
-    const finalImageData = canvasDataUrl || uploadedImage;
+    const handleSaveDesign = async () => {
+    if (!currentUser) return;
     
-    const design: Design = {
-      id: currentDesign?.id || Date.now().toString(),
-      name: designName,
-      imageDataUrl: finalImageData || undefined,
-      phoneModel: selectedPhoneModel,
-      createdAt: currentDesign?.createdAt || new Date(),
-    };
+    try {
+      const design: Omit<DesignData, 'id' | 'created_at' | 'updated_at'> = {
+        user_id: currentUser.id,
+        name: designName,
+        image_url: uploadedImage || '',
+        phone_model: selectedPhoneModel,
+        material: selectedMaterial,
+      };
 
-    if (currentDesign) {
-      onUpdateDesign(currentDesign.id, design);
-    } else {
-      onAddDesign(design);
+      const savedDesign = await createDesign(design);
+      const updatedDesigns = await getDesigns(currentUser.id);
+      onAddDesign(updatedDesigns.map(convertSupabaseDesign));
+      setCurrentDesign(convertSupabaseDesign(savedDesign));
+      setShowDrawing(false);
+    } catch (error) {
+      console.error('Error saving design:', error);
     }
-
-    setCurrentDesign(design);
-    setShowDrawing(false);
   };
 
   const handleNewDesign = () => {
     setCurrentDesign(null);
     setDesignName('');
-    setSelectedPhoneModel('');
+    setSelectedPhoneModel(PHONE_MODELS[0].id);
+    setSelectedMaterial('tpu-gel');
     setUploadedImage(null);
     setShowDrawing(false);
     setShowPreview(false);
   };
 
   const handleLoadDesign = (design: Design) => {
-    setCurrentDesign(design);
     setDesignName(design.name);
-    setSelectedPhoneModel(design.phoneModel);
-    setUploadedImage(design.imageDataUrl || null);
+    setSelectedPhoneModel(design.phone_model);
+    setSelectedMaterial(design.material);
+    setUploadedImage(design.image_url);
+    setCurrentDesign(design);
   };
 
   const handleOrderNow = () => {
@@ -127,7 +142,7 @@ export function DesignStudio({
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Design Controls */}
         <div className="lg:col-span-1 space-y-4">
           <Card>
@@ -158,6 +173,22 @@ export function DesignStudio({
                     {PHONE_MODELS.map((model) => (
                       <SelectItem key={model.id} value={model.id}>
                         {t(language, model.id as any)} - ${model.price}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="material">{t(language, 'material')}</Label>
+                <Select value={selectedMaterial} onValueChange={setSelectedMaterial}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t(language, 'selectMaterial')} />
+                  </SelectTrigger>  
+                  <SelectContent>
+                    {MATERIALS.map((material) => (
+                      <SelectItem key={material.id} value={material.id}>
+                        {t(language, material.id as any)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -228,7 +259,7 @@ export function DesignStudio({
         </div>
 
         {/* Design Preview */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-1">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -278,14 +309,18 @@ export function DesignStudio({
 
       {/* Design Gallery */}
       <DesignGallery
-        designs={designs}
+        designs={designs.map(d => ({
+          ...d,
+          phoneModel: d.phone_model,
+          createdAt: new Date(d.created_at || Date.now())
+        }))}
         onLoadDesign={handleLoadDesign}
         onDeleteDesign={onDeleteDesign}
         onOrderDesign={(design) => {
           setCurrentDesign(design);
           setDesignName(design.name);
-          setSelectedPhoneModel(design.phoneModel);
-          setUploadedImage(design.imageDataUrl || null);
+          setSelectedPhoneModel(design.phone_model);
+          setUploadedImage(design.image_url);
           setShowPreview(true);
         }}
         language={language}
@@ -293,9 +328,15 @@ export function DesignStudio({
 
       {/* Drawing Canvas Dialog */}
       <Dialog open={showDrawing} onOpenChange={setShowDrawing}>
-        <DialogContent className="max-w-[98vw] max-h-[95vh] w-full p-0 overflow-hidden">
+        <DialogContent 
+          className="max-w-[98vw] max-h-[95vh] w-full p-0 overflow-hidden"
+          aria-describedby="design-canvas-description"
+        >
           <DialogHeader className="p-6 pb-0">
             <DialogTitle>{t(language, 'designCanvas')}</DialogTitle>
+            <p id="design-canvas-description" className="text-sm text-muted-foreground">
+              {t(language, 'designMethod')}
+            </p>
           </DialogHeader>
           <div className="overflow-auto max-h-[calc(95vh-80px)]">
             <DrawingCanvas
@@ -311,13 +352,23 @@ export function DesignStudio({
       {/* Order Preview Dialog */}
       {currentDesign && (
         <Dialog open={showPreview} onOpenChange={setShowPreview}>
-          <DialogContent className="max-w-[95vw] w-full max-h-[90vh] p-0 overflow-hidden sm:max-w-2xl">
+          <DialogContent 
+            className="max-w-[95vw] w-full max-h-[90vh] p-0 overflow-hidden sm:max-w-2xl"
+            aria-describedby="order-preview-description"
+          >
             <DialogHeader className="p-6 pb-0">
               <DialogTitle>{t(language, 'orderPreview')}</DialogTitle>
+              <p id="order-preview-description" className="text-sm text-muted-foreground">
+                {t(language, 'customPhoneCase')}
+              </p>
             </DialogHeader>
             <div className="overflow-auto max-h-[calc(90vh-80px)] p-6 pt-0">
               <OrderPreview
-                design={currentDesign}
+                design={{
+                  ...currentDesign,
+                  phoneModel: currentDesign.phone_model,
+                  createdAt: new Date(currentDesign.created_at || Date.now())
+                }}
                 onCreateOrder={onCreateOrder}
                 onClose={() => setShowPreview(false)}
                 currentUser={currentUser}

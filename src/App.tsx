@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
-import { Button } from './components/ui/button';
 import { Badge } from './components/ui/badge';
 import { DesignStudio } from './components/DesignStudio';
 import { OrderHistory } from './components/OrderHistory';
@@ -8,34 +7,11 @@ import { UserProfile } from './components/UserProfile';
 import { CompanyDashboard } from './components/CompanyDashboard';
 import { Header } from './components/Header';
 import { AuthForm } from './components/AuthForm';
-import { ShoppingCart, User, Palette, Building } from 'lucide-react';
+import { ShoppingCart, User as UserIcon, Palette, Building } from 'lucide-react';
 import { Language, t } from './utils/translations';
 import { supabase } from './utils/supabase/client';
-
-export interface Design {
-  id: string;
-  name: string;
-  imageDataUrl?: string;
-  phoneModel: string;
-  preview?: string;
-  createdAt: Date;
-}
-
-export interface Order {
-  id: string;
-  designId: string;
-  design: Design;
-  quantity: number;
-  phoneModel: string;
-  totalPrice: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered';
-  customerInfo: {
-    name: string;
-    email: string;
-    address: string;
-  };
-  createdAt: Date;
-}
+import { Design } from './types/design';
+import { Order } from './types/order';
 
 export interface User {
   id: string;
@@ -49,47 +25,26 @@ export default function App() {
   const [designs, setDesigns] = useState<Design[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState('design');
-  const [language, setLanguage] = useState<Language>('lv'); // Latvian as default
+  const [language, setLanguage] = useState<Language>('en');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for existing session and load data on component mount
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Check for existing Supabase session
-        console.log('Checking for existing session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.log('Session check error:', error.message);
+          console.error('Session check error:', error.message);
         } else if (session?.user) {
-          console.log('Found existing session for user:', session.user.id);
           setCurrentUser({
             id: session.user.id,
             name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
             email: session.user.email || '',
             isAdmin: session.user.user_metadata?.isAdmin || false
           });
-        } else {
-          console.log('No existing session found');
         }
       } catch (error: any) {
-        console.log('Session initialization error:', error.message);
-      }
-
-      // Load local data
-      const savedDesigns = localStorage.getItem('phonecase-designs');
-      const savedOrders = localStorage.getItem('phonecase-orders');
-      const savedLanguage = localStorage.getItem('phonecase-language');
-      
-      if (savedDesigns) {
-        setDesigns(JSON.parse(savedDesigns));
-      }
-      if (savedOrders) {
-        setOrders(JSON.parse(savedOrders));
-      }
-      if (savedLanguage) {
-        setLanguage(savedLanguage as Language);
+        console.error('Session initialization error:', error.message);
       }
 
       setIsLoading(false);
@@ -97,9 +52,7 @@ export default function App() {
 
     initializeApp();
 
-    // Listen to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
       if (session?.user) {
         setCurrentUser({
           id: session.user.id,
@@ -115,44 +68,30 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Save language to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('phonecase-language', language);
-  }, [language]);
+    const loadUserData = async () => {
+      if (!currentUser) return;
+      
+      const [designsResponse, ordersResponse] = await Promise.all([
+        supabase.from('designs').select('*').eq('user_id', currentUser.id),
+        supabase.from('orders').select('*, design:designs(*)').eq('user_id', currentUser.id)
+      ]);
 
-  // Save designs to localStorage whenever designs change
-  useEffect(() => {
-    localStorage.setItem('phonecase-designs', JSON.stringify(designs));
-  }, [designs]);
+      if (designsResponse.error) {
+        console.error('Error loading designs:', designsResponse.error);
+      } else {
+        setDesigns(designsResponse.data || []);
+      }
 
-  // Save orders to localStorage whenever orders change
-  useEffect(() => {
-    localStorage.setItem('phonecase-orders', JSON.stringify(orders));
-  }, [orders]);
+      if (ordersResponse.error) {
+        console.error('Error loading orders:', ordersResponse.error);
+      } else {
+        setOrders(ordersResponse.data || []);
+      }
+    };
 
-  const addDesign = (design: Design) => {
-    setDesigns(prev => [...prev, design]);
-  };
-
-  const updateDesign = (designId: string, updates: Partial<Design>) => {
-    setDesigns(prev => prev.map(d => d.id === designId ? { ...d, ...updates } : d));
-  };
-
-  const deleteDesign = (designId: string) => {
-    setDesigns(prev => prev.filter(d => d.id !== designId));
-  };
-
-  const addOrder = (order: Order) => {
-    setOrders(prev => [...prev, order]);
-  };
-
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
-  };
-
-  const toggleLanguage = () => {
-    setLanguage(prev => prev === 'lv' ? 'en' : 'lv');
-  };
+    loadUserData();
+  }, [currentUser]);
 
   const handleAuth = (user: User) => {
     setCurrentUser(user);
@@ -160,21 +99,15 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
-      console.log('Signing out user...');
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.log('Sign out error:', error.message);
-      } else {
-        console.log('User signed out successfully');
-      }
-    } catch (error: any) {
-      console.log('Sign out exception:', error.message);
+      if (error) throw error;
+    } catch (error) {
+      console.error('Sign out error:', error);
     }
     setCurrentUser(null);
     setActiveTab('design');
   };
 
-  // Show loading spinner while checking session
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -183,7 +116,6 @@ export default function App() {
     );
   }
 
-  // Show login form if user is not authenticated
   if (!currentUser) {
     return <AuthForm onAuth={handleAuth} language={language} />;
   }
@@ -194,7 +126,7 @@ export default function App() {
         user={currentUser} 
         onLogout={handleLogout}
         language={language}
-        onToggleLanguage={toggleLanguage}
+        onToggleLanguage={() => setLanguage(prev => prev === 'lv' ? 'en' : 'lv')}
       />
       
       <div className="container mx-auto p-3 sm:p-6">
@@ -205,6 +137,7 @@ export default function App() {
               <span className="hidden sm:inline">{t(language, 'designStudio')}</span>
               <span className="sm:hidden">{t(language, 'design')}</span>
             </TabsTrigger>
+            
             <TabsTrigger value="orders" className="flex items-center gap-1 sm:gap-2">
               <ShoppingCart className="w-4 h-4" />
               <span className="hidden sm:inline">{t(language, 'orders')}</span>
@@ -215,56 +148,59 @@ export default function App() {
                 </Badge>
               )}
             </TabsTrigger>
+            
             <TabsTrigger value="profile" className="flex items-center gap-1 sm:gap-2">
-              <User className="w-4 h-4" />
+              <UserIcon className="w-4 h-4" />
               <span className="hidden sm:inline">{t(language, 'profile')}</span>
               <span className="sm:hidden">{t(language, 'profile')}</span>
             </TabsTrigger>
+
             {currentUser.isAdmin && (
-              <TabsTrigger value="company" className="flex items-center gap-1 sm:gap-2">
+              <TabsTrigger value="admin" className="flex items-center gap-1 sm:gap-2">
                 <Building className="w-4 h-4" />
-                <span className="hidden sm:inline">{t(language, 'company')}</span>
-                <span className="sm:hidden">{t(language, 'company')}</span>
+                <span className="hidden sm:inline">{t(language, 'adminDashboard')}</span>
+                <span className="sm:hidden">{t(language, 'admin')}</span>
               </TabsTrigger>
             )}
           </TabsList>
 
-          <TabsContent value="design" className="mt-6">
-            <DesignStudio 
-              designs={designs}
-              onAddDesign={addDesign}
-              onUpdateDesign={updateDesign}
-              onDeleteDesign={deleteDesign}
-              onCreateOrder={addOrder}
+          <TabsContent value="design" className="mt-4">
+            <DesignStudio
               currentUser={currentUser}
-              language={language}
-            />
-          </TabsContent>
-
-          <TabsContent value="orders" className="mt-6">
-            <OrderHistory 
-              orders={orders.filter(o => !currentUser.isAdmin)}
-              onUpdateOrder={updateOrderStatus}
-              language={language}
-            />
-          </TabsContent>
-
-          <TabsContent value="profile" className="mt-6">
-            <UserProfile 
-              user={currentUser}
-              onUpdateUser={setCurrentUser}
               designs={designs}
-              orders={orders.filter(o => !currentUser.isAdmin)}
+              language={language}
+              addDesign={design => setDesigns(prev => [...prev, design])}
+              updateDesign={(id, updates) => setDesigns(prev => 
+                prev.map(d => d.id === id ? { ...d, ...updates } : d)
+              )}
+              deleteDesign={id => setDesigns(prev => prev.filter(d => d.id !== id))}
+            />
+          </TabsContent>
+
+          <TabsContent value="orders" className="mt-4">
+            <OrderHistory
+              orders={orders}
+              designs={designs}
+              language={language}
+              currentUser={currentUser}
+              updateOrderStatus={(id, status) => setOrders(prev =>
+                prev.map(o => o.id === id ? { ...o, status } : o)
+              )}
+            />
+          </TabsContent>
+
+          <TabsContent value="profile" className="mt-4">
+            <UserProfile
+              user={currentUser}
+              designs={designs}
+              orders={orders}
               language={language}
             />
           </TabsContent>
 
           {currentUser.isAdmin && (
-            <TabsContent value="company" className="mt-6">
-              <CompanyDashboard 
-                orders={orders}
-                onUpdateOrderStatus={updateOrderStatus}
-                designs={designs}
+            <TabsContent value="admin" className="mt-4">
+              <CompanyDashboard
                 language={language}
               />
             </TabsContent>
@@ -273,4 +209,4 @@ export default function App() {
       </div>
     </div>
   );
-}
+};
