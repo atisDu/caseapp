@@ -76,27 +76,45 @@ export default function App() {
         } else {
           console.log('No existing session found');
         }
-      } catch (error: any) {
-        console.log('Session initialization error:', error.message);
+
+        // Fetch designs from Supabase
+      if (session?.user) {
+        const { data: supabaseDesigns, error: designsError } = await supabase
+          .from('designs')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: false });
+
+        if (designsError) throw designsError;
+
+        // Transform Supabase data to match your Design interface
+        const transformedDesigns: Design[] = supabaseDesigns.map(d => ({
+          id: d.id,
+          name: d.name,
+          imageDataUrl: d.image_url,
+          phoneModel: d.phone_model,
+          material: d.material,
+          createdAt: new Date(d.created_at)
+        }));
+
+        setDesigns(transformedDesigns);
       }
 
-      // Load local data
-      const savedDesigns = localStorage.getItem('phonecase-designs');
-      const savedOrders = localStorage.getItem('phonecase-orders');
+    } catch (error: any) {
+      console.error('Error initializing app:', error);
+    }
+    setIsLoading(false);
+  };
+
+      
+
+      
       const savedLanguage = localStorage.getItem('phonecase-language');
       
-      if (savedDesigns) {
-        setDesigns(JSON.parse(savedDesigns));
-      }
-      if (savedOrders) {
-        setOrders(JSON.parse(savedOrders));
-      }
+      
       if (savedLanguage) {
         setLanguage(savedLanguage as Language);
       }
-
-      setIsLoading(false);
-    };
 
     initializeApp();
 

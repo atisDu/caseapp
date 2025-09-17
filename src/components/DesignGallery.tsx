@@ -59,13 +59,15 @@ export function DesignGallery({ designs, onLoadDesign, onDeleteDesign, onOrderDe
                       <h4 className="font-medium truncate flex-1">{design.name}</h4>
                     </div>
                     
-                    <Badge variant="secondary" className="text-xs">
-                      {design.phoneModel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </Badge>
+                    {design.phoneModel && (
+                      <Badge variant="secondary" className="text-xs">
+                        {design.phoneModel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Badge>
+                    )}
                     
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Calendar className="w-3 h-3" />
-                      {new Date(design.createdAt).toLocaleDateString()}
+                      {design.createdAt ? new Date(design.createdAt).toLocaleDateString() : '-'}
                     </div>
                     
                     <div className="space-y-2 pt-2">

@@ -13,6 +13,7 @@ import { Design, Order, User } from '../App';
 import { Upload, Palette, Eye, ShoppingCart, Save, Plus } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Language, t } from '../utils/translations';
+import { supabase } from '../utils/supabase/client';
 
 const MATERIALS = [{ id: 'tpu-gel', name: 'TPU/Gel'}];
 
@@ -67,22 +68,69 @@ export function DesignStudio({
     }
   };
 
-  const handleSaveDesign = (canvasDataUrl?: string) => {
+  const handleSaveDesign = async (canvasDataUrl?: string) => {
     if (!designName || !selectedPhoneModel) {
       alert('Please provide a design name and select a phone model');
       return;
     }
+    try {
+      const finalImageData = canvasDataUrl || uploadedImage;
+      
+      //Uploading of the image to Supabase
+      let imageUrl = null;
+      if (finalImageData) {
+        // Convert base64 to blob
+        const base64Data = finalImageData.split(',')[1];
+        const blob = await fetch(`data:image/png;base64,${base64Data}`).then(res => res.blob());
+        
+        // Upload to Supabase storage
+        const fileName = `${Date.now()}-${designName.replace(/\s+/g, '-')}.png`;
+        
+        const { data: imageData, error: uploadError } = await supabase.storage
+          .from('designs')
+          .upload(fileName, blob, {
+            contentType: 'image/png',
+            upsert: true
+          });
 
-    const finalImageData = canvasDataUrl || uploadedImage;
+        if (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          throw new Error(`Failed to upload image: ${uploadError.message}`);
+        }
+        
+        // Get public URL for the uploaded image
+        const { data: { publicUrl } } = supabase.storage
+          .from('designs')
+          .getPublicUrl(fileName);
+        
+        imageUrl = publicUrl;
+      }
+
+    const {data: savedDesign, error: dbError } = await supabase
+      .from('designs')
+      .upsert({
+        id: currentDesign?.id || undefined, // Let the DB generate ID for new designs
+        user_id: currentUser.id,
+        name: designName,
+        image_url: imageUrl,
+        created_at: currentDesign?.createdAt || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        phone_model: selectedPhoneModel,
+        material: selectedMaterial
+      })
+      .select()
+      .single();
+    if (dbError) throw dbError;
     
-    const design: Design = {
-      id: currentDesign?.id || Date.now().toString(),
-      name: designName,
-      imageDataUrl: finalImageData || undefined,
-      phoneModel: selectedPhoneModel,
-      material: selectedMaterial,
-      createdAt: currentDesign?.createdAt || new Date(),
-    };
+    // Update local state
+      const design: Design = {
+        id: savedDesign.id,
+        name: savedDesign.name,
+        imageDataUrl: imageUrl,
+        phoneModel: savedDesign.phone_model,
+        material: savedDesign.material,
+        createdAt: new Date(savedDesign.created_at),
+      };
 
     if (currentDesign) {
       onUpdateDesign(currentDesign.id, design);
@@ -92,6 +140,16 @@ export function DesignStudio({
 
     setCurrentDesign(design);
     setShowDrawing(false);
+
+    setDesignName('');
+    setSelectedPhoneModel('');
+    setSelectedMaterial('');
+    setUploadedImage(null);
+    //testēju ūdeņus
+    } catch (error) {
+      console.error('Error saving design:', error);
+      alert('Failed to save design. Please try again.');
+    }
   };
 
   const handleNewDesign = () => {
