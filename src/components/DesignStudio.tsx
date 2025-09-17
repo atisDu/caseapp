@@ -50,7 +50,7 @@ export function DesignStudio({
   const [currentDesign, setCurrentDesign] = useState<Design | null>(null);
   const [designName, setDesignName] = useState('');
   const [selectedPhoneModel, setSelectedPhoneModel] = useState('');
-  const [selectedMaterial, setSelectedMaterial] = useState('');
+  const [selectedMaterial, setSelectedMaterial] = useState(MATERIALS[0].id);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [showDrawing, setShowDrawing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -230,9 +230,9 @@ export function DesignStudio({
 
               <div>
                 <Label htmlFor="material">{t(language, 'material')}</Label>
-                <Select defaultValue={'tpu-gel'} value={selectedMaterial} onValueChange={setSelectedMaterial}>
+                <Select value={selectedMaterial} onValueChange={setSelectedMaterial}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t(language, 'selectMaterial')} />
+                    <SelectValue>{t(language, selectedMaterial as any)}</SelectValue>
                   </SelectTrigger>  
                   <SelectContent>
                     {MATERIALS.map((material) => (

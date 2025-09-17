@@ -159,8 +159,37 @@ export default function App() {
     setDesigns(prev => prev.map(d => d.id === designId ? { ...d, ...updates } : d));
   };
 
-  const deleteDesign = (designId: string) => {
-    setDesigns(prev => prev.filter(d => d.id !== designId));
+  const deleteDesign = async (designId: string) => {
+    try {
+      // Delete from Supabase database
+      const { error: dbError } = await supabase
+        .from('designs')
+        .delete()
+        .eq('id', designId);
+
+      if (dbError) throw dbError;
+
+      // Delete image from storage
+      const design = designs.find(d => d.id === designId);
+      if (design?.imageDataUrl) {
+        const fileName = design.imageDataUrl.split('/').pop(); // Get filename from URL
+        if (fileName) {
+          const { error: storageError } = await supabase.storage
+            .from('designs')
+            .remove([fileName]);
+          
+          if (storageError) {
+            console.error('Error deleting image:', storageError);
+          }
+        }
+      }
+
+      // Update local state
+      setDesigns(prev => prev.filter(d => d.id !== designId));
+    } catch (error) {
+      console.error('Error deleting design:', error);
+      alert('Failed to delete design. Please try again.');
+    }
   };
 
   const addOrder = (order: Order) => {
