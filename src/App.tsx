@@ -28,15 +28,11 @@ export interface Order {
   designId: string;
   design: Design;
   quantity: number;
-  phoneModel: string;
-  totalPrice: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered';
-  customerInfo: {
-    name: string;
-    email: string;
-    address: string;
-  };
+  status: 'pending' | 'processing' | 'shipped' | 'completed';
+  shippingAddress: string;
   createdAt: Date;
+  updatedAt: Date;
+  userId: string;
 }
 
 export interface User {
@@ -98,6 +94,40 @@ export default function App() {
         }));
 
         setDesigns(transformedDesigns);
+
+        // Fetch orders
+        const { data: supabaseOrders, error: ordersError } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            design:designs(*)
+          `)
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: false });
+
+        if (ordersError) throw ordersError;
+
+        // Transform orders data
+        const transformedOrders: Order[] = supabaseOrders.map(o => ({
+          id: o.id,
+          userId: o.user_id,
+          designId: o.design_id,
+          design: {
+            id: o.design.id,
+            name: o.design.name,
+            imageDataUrl: o.design.image_url,
+            phoneModel: o.design.phone_model,
+            material: o.design.material,
+            createdAt: new Date(o.design.created_at)
+          },
+          status: o.status,
+          shippingAddress: o.shipping_address,
+          quantity: o.quantity,
+          createdAt: new Date(o.created_at),
+          updatedAt: new Date(o.updated_at)
+        }));
+
+        setOrders(transformedOrders);
       }
 
     } catch (error: any) {
@@ -192,12 +222,60 @@ export default function App() {
     }
   };
 
-  const addOrder = (order: Order) => {
-    setOrders(prev => [...prev, order]);
+  const addOrder = async (order: Order) => {
+    try {
+      const { data: savedOrder, error } = await supabase
+        .from('orders')
+        .insert({
+          user_id: currentUser?.id,
+          design_id: order.designId,
+          status: 'pending',
+          shipping_address: order.shippingAddress,
+          quantity: order.quantity,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newOrder: Order = {
+        id: savedOrder.id,
+        userId: savedOrder.user_id,
+        designId: savedOrder.design_id,
+        status: savedOrder.status,
+        shippingAddress: savedOrder.shipping_address,
+        quantity: savedOrder.quantity,
+        createdAt: new Date(savedOrder.created_at),
+        updatedAt: new Date(savedOrder.updated_at),
+        design: order.design
+      };
+
+      setOrders(prev => [...prev, newOrder]);
+    } catch (error) {
+      console.error('Error adding order:', error);
+      alert('Failed to create order. Please try again.');
+    }
   };
 
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+  const updateOrderStatus = async (orderId: string, status: Order['status']) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status, updatedAt: new Date() } : o));
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      alert('Failed to update order status. Please try again.');
+    }
   };
 
   const toggleLanguage = () => {

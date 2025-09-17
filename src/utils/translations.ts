@@ -1,5 +1,10 @@
 export const translations = {
   lv: {
+    // Order Status
+    pending: 'Gaida apstiprinājumu',
+    processing: 'Apstrādē',
+    shipped: 'Nosūtīts',
+    completed: 'Pabeigts',
     // Header
     appTitle: 'CaseShops',
     appSubtitle: 'Vāciņu printeris',
