@@ -6,17 +6,14 @@ import { Textarea } from './ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
-import { User } from '../App';
+import { Design, Order, User } from '../App';
 import { ShoppingCart, CreditCard, Truck, Package } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { PhoneCaseMockup } from './PhoneCaseMockup';
 import { AddressAutocomplete } from './AddressAutocomplete';
 import { Language, t } from '../utils/translations';
-import { AppDesign } from '../utils/design-converter';
-import { createOrder } from '../utils/supabase/client';
-import { Order, ShippingAddress } from '../types/order';
 
-export const PHONE_MODELS = [
+const PHONE_MODELS = [
   { id: 'iphone-15-pro', name: 'iPhone 15 Pro', price: 29.99 },
   { id: 'iphone-15', name: 'iPhone 15', price: 27.99 },
   { id: 'iphone-14-pro', name: 'iPhone 14 Pro', price: 29.99 },
@@ -25,11 +22,11 @@ export const PHONE_MODELS = [
   { id: 'samsung-s23', name: 'Samsung Galaxy S23', price: 26.99 },
   { id: 'pixel-8-pro', name: 'Google Pixel 8 Pro', price: 28.99 },
   { id: 'pixel-8', name: 'Google Pixel 8', price: 26.99 },
-] as const;
+];
 
 interface OrderPreviewProps {
-  design: AppDesign;
-  onCreateOrder: (orderId: string) => void;
+  design: Design;
+  onCreateOrder: (order: Order) => void;
   onClose: () => void;
   currentUser: User;
   language: Language;
@@ -56,56 +53,35 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
     setQuantity(newQuantity);
   };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsProcessing(true);
-
-    const phoneModel = PHONE_MODELS.find(m => m.id === design.phoneModel);
-    if (!phoneModel) {
-      setIsProcessing(false);
+  const handleSubmitOrder = async () => {
+    if (!customerInfo.name || !customerInfo.email || !customerInfo.address) {
+      alert('Please fill in all required fields');
       return;
     }
 
+    setIsProcessing(true);
+
+    // Simulate Stripe payment processing
     try {
-      const subtotal = phoneModel.price * quantity;
-      const shipping = subtotal > 50 ? 0 : 4.99;
-      const tax = subtotal * 0.08;
-      const total = subtotal + shipping + tax;
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      const [street = '', city = '', state = '', zip = ''] = customerInfo.address.split(',').map(s => s.trim());
-
-      const shippingAddress: ShippingAddress = {
-        street,
-        city,
-        state,
-        zip,
-        country: 'US',
-        name: customerInfo.name
-      };
-
-      const orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'> = {
-        user_id: currentUser.id,
-        design_id: design.id,
-        total_amount: total,
+      const order: Order = {
+        id: Date.now().toString(),
+        designId: design.id,
+        design: design,
+        quantity,
+        phoneModel: design.phoneModel,
+        totalPrice: total,
         status: 'pending',
-        shipping_address: shippingAddress,
-        quantity: quantity,
-        customer_email: customerInfo.email
+        customerInfo,
+        createdAt: new Date(),
       };
 
-      // Simulate Stripe payment processing
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const savedOrder = await createOrder(orderData);
-      if (savedOrder && savedOrder.id) {
-        onCreateOrder(savedOrder.id);
-        onClose();
-      } else {
-        throw new Error('Failed to create order');
-      }
+      onCreateOrder(order);
+      alert(`Order placed successfully! Order ID: ${order.id}\nYou will receive a confirmation email shortly.`);
+      onClose();
     } catch (error) {
-      console.error('Error creating order:', error);
-      alert('There was an error creating your order. Please try again.');
+      alert('Payment failed. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -293,7 +269,7 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
           {t(language, 'cancel')}
         </Button>
         <Button
-          onClick={handleSubmit}
+          onClick={handleSubmitOrder}
           disabled={isProcessing || !customerInfo.name || !customerInfo.email || !customerInfo.address}
           className="flex-1 flex items-center justify-center gap-2 order-1 sm:order-2"
         >
