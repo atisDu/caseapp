@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { DrawingCanvas } from './DrawingCanvas';
 import { OrderPreview } from './OrderPreview';
 import { DesignGallery } from './DesignGallery';
@@ -70,7 +70,7 @@ export function DesignStudio({
 
   const handleSaveDesign = async (canvasDataUrl?: string) => {
     if (!designName || !selectedPhoneModel) {
-      alert('Please provide a design name and select a phone model');
+      alert(t(language, 'designNameRequired'));
       return;
     }
     try {
@@ -148,7 +148,7 @@ export function DesignStudio({
     //testēju ūdeņus
     } catch (error) {
       console.error('Error saving design:', error);
-      alert('Failed to save design. Please try again.');
+      alert(t(language, 'failedToSave'));
     }
   };
 
@@ -174,7 +174,7 @@ export function DesignStudio({
     if (currentDesign) {
       setShowPreview(true);
     } else {
-      alert('Please save your design first');
+      alert(t(language, 'saveDesignFirst'));
     }
   };
 
@@ -376,6 +376,9 @@ export function DesignStudio({
         <DialogContent className="max-w-[98vw] max-h-[95vh] w-full p-0 overflow-hidden">
           <DialogHeader className="p-6 pb-0">
             <DialogTitle>{t(language, 'designCanvas')}</DialogTitle>
+            <DialogDescription>
+              {t(language, 'drawYourDesign')}
+            </DialogDescription>
           </DialogHeader>
           <div className="overflow-auto max-h-[calc(95vh-80px)]">
             <DrawingCanvas
@@ -394,6 +397,9 @@ export function DesignStudio({
           <DialogContent className="max-w-[95vw] w-full max-h-[90vh] p-0 overflow-hidden sm:max-w-2xl">
             <DialogHeader className="p-6 pb-0">
               <DialogTitle>{t(language, 'orderPreview')}</DialogTitle>
+              <DialogDescription>
+                {t(language, 'reviewAndConfirmOrder')}
+              </DialogDescription>
             </DialogHeader>
             <div className="overflow-auto max-h-[calc(90vh-80px)] p-6 pt-0">
               <OrderPreview

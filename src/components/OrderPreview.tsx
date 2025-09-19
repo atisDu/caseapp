@@ -8,10 +8,11 @@ import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
 import { Design, Order, User } from '../App';
 import { ShoppingCart, CreditCard, Truck, Package } from 'lucide-react';
-import { ImageWithFallback } from './figma/ImageWithFallback';
 import { PhoneCaseMockup } from './PhoneCaseMockup';
-import { AddressAutocomplete } from './AddressAutocomplete';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Language, t } from '../utils/translations';
+import { SHIPPING_OPTIONS } from '../constants/shipping-options';
+import { COUNTRIES } from '../constants/countries';
 
 const PHONE_MODELS = [
   { id: 'iphone-15-pro', name: 'iPhone 15 Pro', price: 29.99 },
@@ -35,18 +36,86 @@ interface OrderPreviewProps {
 export function OrderPreview({ design, onCreateOrder, onClose, currentUser, language }: OrderPreviewProps) {
   const [quantity, setQuantity] = useState(1);
   const [customerInfo, setCustomerInfo] = useState({
-    name: currentUser.name,
-    email: currentUser.email,
-    address: '',
+    fullName: currentUser?.name || '',
+    name: currentUser?.name || '',  // For backward compatibility
+    address: '',  // For backward compatibility
+    address1: '',
+    address2: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: 'LV',
+    phone: '',
+    email: currentUser?.email || '',
   });
+  const [selectedShipping, setSelectedShipping] = useState(SHIPPING_OPTIONS[0].id);
+  const [bulkInput, setBulkInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const phoneModel = PHONE_MODELS.find(m => m.id === design.phoneModel);
   const unitPrice = phoneModel?.price || 0;
   const subtotal = unitPrice * quantity;
-  const shipping = subtotal > 50 ? 0 : 4.99;
+  const shippingOption = SHIPPING_OPTIONS.find(s => s.id === selectedShipping);
+  const shippingCost = shippingOption?.price || 0;
   const tax = subtotal * 0.08; // 8% tax
-  const total = subtotal + shipping + tax;
+  const total = subtotal + shippingCost + tax;
+
+  const handleBulkInput = (input: string) => {
+    const lines = input.split('\n');
+    if (lines.length >= 2) {
+      // Parse line 2 for city, state, zip if it exists
+      let city = '', state = '', zipCode = '';
+      if (lines[2]) {
+        const parts = lines[2].split(',').map(part => part.trim());
+        if (parts.length >= 2) {
+          city = parts[0] || '';
+          // Parse the second part which contains "State ZIP"
+          const stateZipPart = parts[1];
+          const stateZipMatch = stateZipPart.match(/^([A-Za-z\s]+)\s+([A-Za-z0-9\-\s]+)$/);
+          if (stateZipMatch) {
+            state = stateZipMatch[1].trim();
+            zipCode = stateZipMatch[2].trim();
+          } else {
+            // Fallback: try to split by space and take last part as ZIP
+            const spaceParts = stateZipPart.split(/\s+/);
+            if (spaceParts.length >= 2) {
+              zipCode = spaceParts[spaceParts.length - 1];
+              state = spaceParts.slice(0, -1).join(' ');
+            } else {
+              state = stateZipPart;
+            }
+          }
+        } else if (parts.length === 1) {
+          city = parts[0] || '';
+        }
+      }
+
+      // Find country code from country name in line 3
+      let countryCode = customerInfo.country; // default
+      if (lines[3]) {
+        const countryName = lines[3].trim();
+        const foundCountry = COUNTRIES.find(c => 
+          c.name.toLowerCase() === countryName.toLowerCase() ||
+          c.code.toLowerCase() === countryName.toLowerCase()
+        );
+        if (foundCountry) {
+          countryCode = foundCountry.code;
+        }
+      }
+
+      setCustomerInfo(prev => ({
+        ...prev,
+        fullName: lines[0] || prev.fullName,
+        address1: lines[1] || prev.address1,
+        address2: '', // Clear address2 since we're not using it in this format
+        city: city || prev.city,
+        state: state || prev.state,
+        zipCode: zipCode || prev.zipCode,
+        country: countryCode,
+      }));
+    }
+    setBulkInput(input);
+  };
 
   const handleQuantityChange = (change: number) => {
     const newQuantity = Math.max(1, Math.min(100, quantity + change));
@@ -54,27 +123,62 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
   };
 
   const handleSubmitOrder = async () => {
-    if (!customerInfo.name || !customerInfo.email || !customerInfo.address) {
-      alert('Please fill in all required fields');
+    const requiredFields = {
+      fullName: 'Full Name',
+      address1: 'Address Line 1',
+      city: 'City',
+      zipCode: 'ZIP Code',
+      country: 'Country'
+    };
+
+    const missingFields = Object.entries(requiredFields)
+      .filter(([key]) => !customerInfo[key as keyof typeof customerInfo])
+      .map(([, label]) => label);
+
+    if (missingFields.length > 0) {
+      alert(`Please fill in the following required fields:\n${missingFields.join('\n')}`);
       return;
     }
 
     setIsProcessing(true);
 
-    // Simulate Stripe payment processing
     try {
       await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const shippingAddress = [
+        customerInfo.fullName,
+        customerInfo.address1,
+        customerInfo.address2,
+        customerInfo.city,
+        customerInfo.state,
+        customerInfo.zipCode,
+        COUNTRIES.find(c => c.code === customerInfo.country)?.name,
+        customerInfo.phone,
+      ].filter(Boolean).join('\n');
 
       const order: Order = {
         id: Date.now().toString(),
         designId: design.id,
         design: design,
+        userId: currentUser.id,
         quantity,
-        phoneModel: design.phoneModel,
-        totalPrice: total,
         status: 'pending',
-        customerInfo,
+        shippingAddress,
+        totalPrice: total,
+        unitPrice: unitPrice,
+        subtotal: subtotal,
+        taxAmount: tax,
+        taxRate: 0.08,
+        customerInfo: {
+          name: customerInfo.fullName,
+          email: customerInfo.email,
+          address: shippingAddress
+        },
+        phoneModel: design.phoneModel,
+        shippingMethod: shippingOption?.name || 'Standard',
+        shippingPrice: shippingCost,
         createdAt: new Date(),
+        updatedAt: new Date()
       };
 
       onCreateOrder(order);
@@ -98,194 +202,234 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="w-full sm:w-32 h-40 sm:h-40 bg-muted rounded-lg overflow-hidden shrink-0">
-              <PhoneCaseMockup
-                phoneModel={design.phoneModel}
-                designImage={design.imageDataUrl}
-                className="w-full h-full"
-              />
+          <div className="aspect-[3/4] max-w-xs mx-auto mb-4">
+            <PhoneCaseMockup
+              phoneModel={design.phoneModel}
+              designImage={design.imageDataUrl}
+              className="w-full h-full"
+            />
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">{design.name}</span>
+              <span>${unitPrice.toFixed(2)}</span>
             </div>
-            <div className="flex-1 space-y-2">
-              <h3 className="font-semibold">{design.name}</h3>
-              <Badge variant="secondary">
-                {phoneModel?.name}
-              </Badge>
-              <p className="text-sm text-muted-foreground">
-                {t(language, 'customPhoneCase')}
-              </p>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 pt-2">
-                <span className="font-medium">${unitPrice.toFixed(2)} {t(language, 'each')}</span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleQuantityChange(-1)}
-                    disabled={quantity <= 1}
-                  >
-                    -
-                  </Button>
-                  <span className="w-8 text-center">{quantity}</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleQuantityChange(1)}
-                    disabled={quantity >= 100}
-                  >
-                    +
-                  </Button>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleQuantityChange(-1)}
+                disabled={quantity <= 1}
+              >
+                -
+              </Button>
+              <span className="w-12 text-center">{quantity}</span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleQuantityChange(1)}
+                disabled={quantity >= 100}
+              >
+                +
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Customer Information */}
+      {/* Order Form */}
       <Card>
         <CardHeader>
-          <CardTitle>{t(language, 'customerInfo')}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Truck className="w-5 h-5" />
+            {t(language, 'shippingAddress')}
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <CardContent className="space-y-6">
+          {/* Quick Input */}
+          <div className="space-y-4 mb-6">
             <div>
-              <Label htmlFor="name">{t(language, 'fullName')} *</Label>
+              <Label htmlFor="bulk-input">{t(language, 'quickAddressInput')}</Label>
+              <Textarea
+                id="bulk-input"
+                value={bulkInput}
+                onChange={(e) => handleBulkInput(e.target.value)}
+                placeholder={t(language, 'pasteFormattedAddress')}
+                className="h-32"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {t(language, 'addressFormatInstructions')}
+              </p>
+            </div>
+          </div>
+
+          {/* Customer Information */}
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="fullName">{t(language, 'fullName')} *</Label>
               <Input
-                id="name"
-                value={customerInfo.name}
-                onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
+                id="fullName"
+                value={customerInfo.fullName}
+                onChange={(e) => setCustomerInfo(prev => ({ ...prev, fullName: e.target.value }))}
                 placeholder={t(language, 'enterFullName')}
+                required
               />
             </div>
+            
             <div>
-              <Label htmlFor="email">{t(language, 'email')} *</Label>
+              <Label htmlFor="address1">{t(language, 'addressLine1')} *</Label>
+              <Input
+                id="address1"
+                value={customerInfo.address1}
+                onChange={(e) => setCustomerInfo(prev => ({ ...prev, address1: e.target.value }))}
+                placeholder={t(language, 'streetAddress')}
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="address2">{t(language, 'addressLine2')}</Label>
+              <Input
+                id="address2"
+                value={customerInfo.address2}
+                onChange={(e) => setCustomerInfo(prev => ({ ...prev, address2: e.target.value }))}
+                placeholder={t(language, 'apartmentSuite')}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="city">{t(language, 'city')} *</Label>
+                <Input
+                  id="city"
+                  value={customerInfo.city}
+                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, city: e.target.value }))}
+                  placeholder={t(language, 'city')}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="state">{t(language, 'stateProvince')}</Label>
+                <Input
+                  id="state"
+                  value={customerInfo.state}
+                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, state: e.target.value }))}
+                  placeholder={t(language, 'stateProvincePlaceholder')}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="zipCode">{t(language, 'zipCode')} *</Label>
+                <Input
+                  id="zipCode"
+                  value={customerInfo.zipCode}
+                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, zipCode: e.target.value }))}
+                  placeholder={t(language, 'zipCodePlaceholder')}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="country">{t(language, 'country')} *</Label>
+                <Select value={customerInfo.country} onValueChange={(value) => setCustomerInfo(prev => ({ ...prev, country: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t(language, 'selectCountry')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRIES.map((country) => (
+                      <SelectItem key={country.code} value={country.code}>
+                        {country.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="phone">{t(language, 'phoneNumber')}</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={customerInfo.phone}
+                onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder={t(language, 'phoneOptional')}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="email">{t(language, 'email')}</Label>
               <Input
                 id="email"
                 type="email"
                 value={customerInfo.email}
                 onChange={(e) => setCustomerInfo(prev => ({ ...prev, email: e.target.value }))}
-                placeholder={t(language, 'enterEmail')}
+                placeholder={t(language, 'emailOptional')}
               />
             </div>
           </div>
-          <div>
-            <AddressAutocomplete
-              id="address"
-              label={`${t(language, 'shippingAddress')} *`}
-              value={customerInfo.address}
-              onChange={(address) => setCustomerInfo(prev => ({ ...prev, address }))}
-              placeholder={t(language, 'startTypingAddress')}
-              language={language}
-            />
+
+          {/* Shipping Method */}
+          <div className="space-y-4">
+            <Label>{t(language, 'shippingMethod')} *</Label>
+            <Select value={selectedShipping} onValueChange={setSelectedShipping}>
+              <SelectTrigger>
+                <SelectValue placeholder={t(language, 'selectShippingMethod')} />
+              </SelectTrigger>
+              <SelectContent>
+                {SHIPPING_OPTIONS.map((option) => (
+                  <SelectItem key={option.id} value={option.id}>
+                    {option.name} - ${option.price.toFixed(2)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
+          {/* Order Summary */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between text-sm">
+              <span>{t(language, 'subtotal')}</span>
+              <span>${subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span>{t(language, 'shipping')} ({shippingOption?.name})</span>
+              <span>${shippingCost.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span>{t(language, 'tax')} (8%)</span>
+              <span>${tax.toFixed(2)}</span>
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between font-medium">
+              <span>{t(language, 'total')}</span>
+              <span>${total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={handleSubmitOrder}
+            disabled={isProcessing || !customerInfo.fullName || !customerInfo.address1 || 
+                     !customerInfo.city || !customerInfo.zipCode || !customerInfo.country}
+          >
+            {isProcessing ? (
+              <span className="flex items-center gap-2">
+                <span className="animate-spin">○</span>
+                {t(language, 'processingOrder')}
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                {t(language, 'placeOrder')}
+              </span>
+            )}
+          </Button>
         </CardContent>
       </Card>
-
-      {/* Order Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="w-5 h-5" />
-            {t(language, 'orderPreview')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex justify-between">
-            <span>{t(language, 'subtotal')} ({quantity} {quantity > 1 ? (language === 'lv' ? 'gabali' : 'items') : (language === 'lv' ? 'gabals' : 'item')})</span>
-            <span>${subtotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="flex items-center gap-1">
-              <Truck className="w-4 h-4" />
-              {t(language, 'shipping')}
-            </span>
-            <span>${shipping.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>{t(language, 'tax')}</span>
-            <span>${tax.toFixed(2)}</span>
-          </div>
-          <Separator />
-          <div className="flex justify-between font-semibold text-lg">
-            <span>{t(language, 'total')}</span>
-            <span>${total.toFixed(2)}</span>
-          </div>
-          
-          {shipping === 0 && (
-            <Badge className="w-full justify-center bg-green-100 text-green-800 hover:bg-green-100">
-              Free Shipping on orders over $50!
-            </Badge>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Mock Stripe Payment */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t(language, 'mockPayment')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-muted p-4 rounded-lg">
-            <p className="text-sm text-muted-foreground">
-              {language === 'lv' ? 
-                'Šī ir demonstrācijas vide. Ražošanā tas integrētos ar Stripe drošai maksājumu apstrādei.' :
-                'This is a demo environment. In production, this would integrate with Stripe for secure payment processing.'
-              }
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label>{t(language, 'cardNumber')}</Label>
-              <Input placeholder="4242 4242 4242 4242" disabled />
-            </div>
-            <div>
-              <Label>{t(language, 'expiry')}</Label>
-              <Input placeholder="12/28" disabled />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label>{t(language, 'cvc')}</Label>
-              <Input placeholder="123" disabled />
-            </div>
-            <div>
-              <Label>{t(language, 'zipCode')}</Label>
-              <Input placeholder="12345" disabled />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-4">
-        <Button
-          variant="outline"
-          onClick={onClose}
-          disabled={isProcessing}
-          className="flex-1 order-2 sm:order-1"
-        >
-          {t(language, 'cancel')}
-        </Button>
-        <Button
-          onClick={handleSubmitOrder}
-          disabled={isProcessing || !customerInfo.name || !customerInfo.email || !customerInfo.address}
-          className="flex-1 flex items-center justify-center gap-2 order-1 sm:order-2"
-        >
-          {isProcessing ? (
-            <>
-              <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-              {t(language, 'processing')}
-            </>
-          ) : (
-            <>
-              <ShoppingCart className="w-4 h-4" />
-              {t(language, 'placeOrder')} ${total.toFixed(2)}
-            </>
-          )}
-        </Button>
-      </div>
     </div>
   );
 }

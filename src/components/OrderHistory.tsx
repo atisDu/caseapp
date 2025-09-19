@@ -30,10 +30,10 @@ const STATUS_CONFIG = {
     color: 'bg-purple-100 text-purple-800',
     label: 'Shipped'
   },
-  delivered: {
+  completed: {
     icon: CheckCircle,
     color: 'bg-green-100 text-green-800',
-    label: 'Delivered'
+    label: 'Completed'
   }
 };
 
@@ -44,8 +44,8 @@ export function OrderHistory({ orders, onUpdateOrder, language }: OrderHistoryPr
         <CardContent className="p-8 text-center">
           <div className="text-muted-foreground">
             <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium mb-2">No Orders Yet</h3>
-            <p>Your order history will appear here once you place your first order.</p>
+            <h3 className="text-lg font-medium mb-2">{t(language, 'noOrders')}</h3>
+            <p>{t(language, 'makeFirstOrder')}</p>
           </div>
         </CardContent>
       </Card>
@@ -59,8 +59,10 @@ export function OrderHistory({ orders, onUpdateOrder, language }: OrderHistoryPr
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Order History</h2>
-        <p className="text-muted-foreground">Track your phone case orders</p>
+        <h2 className="text-2xl font-bold">{t(language, 'orderHistory')}</h2>
+        <p className="text-muted-foreground">
+          {language === 'lv' ? 'Sekojiet saviem telefona vāciņu pasūtījumiem' : 'Track your phone case orders'}
+        </p>
       </div>
 
       <div className="space-y-4">
@@ -98,12 +100,12 @@ export function OrderHistory({ orders, onUpdateOrder, language }: OrderHistoryPr
                       <div className="flex items-center gap-2">
                         <Package className="w-4 h-4 text-muted-foreground" />
                         <span>
-                          {order.phoneModel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} × {order.quantity}
+                          {order.design.phoneModel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} × {order.quantity}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4 text-muted-foreground" />
-                        <span>${order.totalPrice.toFixed(2)}</span>
+                        <span>Qty: {order.quantity}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -111,51 +113,53 @@ export function OrderHistory({ orders, onUpdateOrder, language }: OrderHistoryPr
                       </div>
                     </div>
 
-                    {/* Customer Info */}
-                    <div className="bg-muted/50 p-3 rounded-lg">
-                      <p className="text-sm">
-                        <strong>Ship to:</strong> {order.customerInfo.name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {order.customerInfo.address}
-                      </p>
-                    </div>
+                    {/* Shipping Info */}
+                    {order.shippingAddress && (
+                      <div className="bg-muted/50 p-3 rounded-lg">
+                        <p className="text-sm">
+                          <strong>{t(language, 'shipTo')}:</strong>
+                        </p>
+                        <p className="text-sm text-muted-foreground whitespace-pre-line">
+                          {order.shippingAddress}
+                        </p>
+                      </div>
+                    )}
 
                     {/* Order Timeline */}
                     <div className="flex items-center gap-4 pt-2">
                       <div className="flex items-center gap-2 text-xs">
                         <div className={`w-2 h-2 rounded-full ${
-                          ['pending', 'processing', 'shipped', 'delivered'].includes(order.status) 
+                          ['pending', 'processing', 'shipped', 'completed'].includes(order.status) 
                             ? 'bg-green-500' : 'bg-gray-300'
                         }`} />
                         <span className={order.status === 'pending' ? 'font-medium' : 'text-muted-foreground'}>
-                          Order Placed
+                          {t(language, 'orderPlacedTimeline')}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
                         <div className={`w-2 h-2 rounded-full ${
-                          ['processing', 'shipped', 'delivered'].includes(order.status) 
+                          ['processing', 'shipped', 'completed'].includes(order.status) 
                             ? 'bg-green-500' : 'bg-gray-300'
                         }`} />
                         <span className={order.status === 'processing' ? 'font-medium' : 'text-muted-foreground'}>
-                          Processing
+                          {t(language, 'orderProcessing')}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
                         <div className={`w-2 h-2 rounded-full ${
-                          ['shipped', 'delivered'].includes(order.status) 
+                          ['shipped', 'completed'].includes(order.status) 
                             ? 'bg-green-500' : 'bg-gray-300'
                         }`} />
                         <span className={order.status === 'shipped' ? 'font-medium' : 'text-muted-foreground'}>
-                          Shipped
+                          {t(language, 'orderShipped')}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
                         <div className={`w-2 h-2 rounded-full ${
-                          order.status === 'delivered' ? 'bg-green-500' : 'bg-gray-300'
+                          order.status === 'completed' ? 'bg-green-500' : 'bg-gray-300'
                         }`} />
-                        <span className={order.status === 'delivered' ? 'font-medium' : 'text-muted-foreground'}>
-                          Delivered
+                        <span className={order.status === 'completed' ? 'font-medium' : 'text-muted-foreground'}>
+                          {t(language, 'orderCompleted')}
                         </span>
                       </div>
                     </div>

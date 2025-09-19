@@ -30,6 +30,19 @@ export interface Order {
   quantity: number;
   status: 'pending' | 'processing' | 'shipped' | 'completed';
   shippingAddress: string;
+  totalPrice: number;
+  unitPrice: number;
+  subtotal: number;
+  taxAmount: number;
+  taxRate: number;
+  customerInfo: {
+    name: string;
+    email: string;
+    address: string;
+  };
+  phoneModel: string;
+  shippingMethod: string;
+  shippingPrice: number;
   createdAt: Date;
   updatedAt: Date;
   userId: string;
@@ -49,122 +62,186 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('design');
   const [language, setLanguage] = useState<Language>('lv'); // Latvian as default
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingData, setIsFetchingData] = useState(false);
   
 
   // Check for existing session and load data on component mount
   useEffect(() => {
     const initializeApp = async () => {
       try {
+        // Set a timeout to prevent infinite loading
+        const timeoutId = setTimeout(() => {
+          console.warn('App initialization timeout - setting loading to false');
+          setIsLoading(false);
+        }, 10000); // 10 second timeout
+
         // Check for existing Supabase session
-        console.log('Checking for existing session...');
         const { data: { session }, error } = await supabase.auth.getSession();
+        
+        // Clear the timeout since we got a response
+        clearTimeout(timeoutId);
         
         if (error) {
           console.log('Session check error:', error.message);
-        } else if (session?.user) {
-          console.log('Found existing session for user:', session.user.id);
-          setCurrentUser({
+          setIsLoading(false);
+          return;
+        } 
+        
+        if (session?.user) {
+          const newUser = {
             id: session.user.id,
             name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
             email: session.user.email || '',
             isAdmin: session.user.user_metadata?.isAdmin || false
-          });
-        } else {
-          console.log('No existing session found');
+          };
+          setCurrentUser(newUser);
+          await fetchUserData(session.user.id, newUser.isAdmin);
         }
-
-        // Fetch designs from Supabase
-      if (session?.user) {
-        const { data: supabaseDesigns, error: designsError } = await supabase
-          .from('designs')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .order('created_at', { ascending: false });
-
-        if (designsError) throw designsError;
-
-        // Transform Supabase data to match your Design interface
-        const transformedDesigns: Design[] = supabaseDesigns.map(d => ({
-          id: d.id,
-          name: d.name,
-          imageDataUrl: d.image_url,
-          phoneModel: d.phone_model,
-          material: d.material,
-          createdAt: new Date(d.created_at)
-        }));
-
-        setDesigns(transformedDesigns);
-
-        // Fetch orders
-        const { data: supabaseOrders, error: ordersError } = await supabase
-          .from('orders')
-          .select(`
-            *,
-            design:designs(*)
-          `)
-          .eq('user_id', session.user.id)
-          .order('created_at', { ascending: false });
-
-        if (ordersError) throw ordersError;
-
-        // Transform orders data
-        const transformedOrders: Order[] = supabaseOrders.map(o => ({
-          id: o.id,
-          userId: o.user_id,
-          designId: o.design_id,
-          design: {
-            id: o.design.id,
-            name: o.design.name,
-            imageDataUrl: o.design.image_url,
-            phoneModel: o.design.phone_model,
-            material: o.design.material,
-            createdAt: new Date(o.design.created_at)
-          },
-          status: o.status,
-          shippingAddress: o.shipping_address,
-          quantity: o.quantity,
-          createdAt: new Date(o.created_at),
-          updatedAt: new Date(o.updated_at)
-        }));
-
-        setOrders(transformedOrders);
+      } catch (error: any) {
+        console.error('Error initializing app:', error);
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-    } catch (error: any) {
-      console.error('Error initializing app:', error);
+    const savedLanguage = localStorage.getItem('phonecase-language');
+    if (savedLanguage) {
+      setLanguage(savedLanguage as Language);
     }
-    setIsLoading(false);
-  };
-
-      
-
-      
-      const savedLanguage = localStorage.getItem('phonecase-language');
-      
-      
-      if (savedLanguage) {
-        setLanguage(savedLanguage as Language);
-      }
 
     initializeApp();
 
     // Listen to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        setCurrentUser({
+        const newUser = {
           id: session.user.id,
           name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
           isAdmin: session.user.user_metadata?.isAdmin || false
-        });
+        };
+        
+        setCurrentUser(newUser);
+        
+        // Fetch user data when auth state changes (but avoid duplicate calls)
+        if (event === 'SIGNED_IN') {
+          await fetchUserData(session.user.id, newUser.isAdmin);
+        }
       } else {
         setCurrentUser(null);
+        setDesigns([]);
+        setOrders([]);
+      }
+      
+      if (event === 'SIGNED_OUT') {
+        setDesigns([]);
+        setOrders([]);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Function to fetch user data (designs and orders)
+  const fetchUserData = async (userId: string, isAdmin?: boolean) => {
+    // Prevent duplicate fetching
+    if (isFetchingData) {
+      return;
+    }
+
+    setIsFetchingData(true);
+    try {
+      // Fetch designs from Supabase
+      const { data: supabaseDesigns, error: designsError } = await supabase
+        .from('designs')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (designsError) {
+        console.error('Error fetching designs:', designsError);
+        throw designsError;
+      }
+
+      // Transform Supabase data to match your Design interface
+      const transformedDesigns: Design[] = supabaseDesigns.map(d => ({
+        id: d.id,
+        name: d.name,
+        imageDataUrl: d.image_url,
+        phoneModel: d.phone_model,
+        material: d.material,
+        createdAt: new Date(d.created_at)
+      }));
+
+      setDesigns(transformedDesigns);
+
+      // Fetch orders - if admin, fetch all orders, otherwise fetch user's orders
+      let ordersQuery = supabase
+        .from('orders')
+        .select(`
+          *,
+          design:designs(*)
+        `)
+        .order('created_at', { ascending: false });
+
+      // Only filter by user_id if not admin
+      if (!isAdmin) {
+        ordersQuery = ordersQuery.eq('user_id', userId);
+      }
+
+      const { data: supabaseOrders, error: ordersError } = await ordersQuery;
+
+      if (ordersError) {
+        // If orders table doesn't exist, just log and continue without orders
+        if (ordersError.code === 'PGRST116' || ordersError.message.includes('relation "orders" does not exist')) {
+          console.warn('Orders table does not exist yet. Please run the database setup SQL.');
+          setOrders([]);
+          return;
+        }
+        console.error('Error fetching orders:', ordersError);
+        throw ordersError;
+      }
+
+      // Transform orders data
+      const transformedOrders: Order[] = supabaseOrders.map(o => ({
+        id: o.id,
+        userId: o.user_id,
+        designId: o.design_id,
+        design: {
+          id: o.design.id,
+          name: o.design.name,
+          imageDataUrl: o.design.image_url,
+          phoneModel: o.design.phone_model,
+          material: o.design.material,
+          createdAt: new Date(o.design.created_at)
+        },
+        status: o.status,
+        shippingAddress: o.shipping_address,
+        totalPrice: o.total_price || 0,
+        unitPrice: o.unit_price || 0,
+        subtotal: o.subtotal || 0,
+        taxAmount: o.tax_amount || 0,
+        taxRate: o.tax_rate || 0,
+        customerInfo: {
+          name: o.customer_name || '',
+          email: o.customer_email || '',
+          address: o.customer_address || '',
+        },
+        phoneModel: o.phone_model || '',
+        shippingMethod: o.shipping_method || '',
+        shippingPrice: o.shipping_price || 0,
+        quantity: o.quantity,
+        createdAt: new Date(o.created_at),
+        updatedAt: new Date(o.updated_at)
+      }));
+
+      setOrders(transformedOrders);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    } finally {
+      setIsFetchingData(false);
+    }
+  };
 
   // Save language to localStorage whenever it changes
   useEffect(() => {
@@ -230,22 +307,47 @@ export default function App() {
           user_id: currentUser?.id,
           design_id: order.designId,
           status: 'pending',
-          shipping_address: order.shippingAddress,
           quantity: order.quantity,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          shipping_address: order.shippingAddress,
+          total_price: order.totalPrice,
+          unit_price: order.unitPrice,
+          subtotal: order.subtotal,
+          tax_amount: order.taxAmount,
+          tax_rate: order.taxRate,
+          customer_name: order.customerInfo.name,
+          customer_email: order.customerInfo.email,
+          customer_address: order.customerInfo.address,
+          phone_model: order.phoneModel,
+          shipping_method: order.shippingMethod,
+          shipping_price: order.shippingPrice,
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error details:', error);
+        throw error;
+      }
 
       const newOrder: Order = {
         id: savedOrder.id,
         userId: savedOrder.user_id,
         designId: savedOrder.design_id,
         status: savedOrder.status,
-        shippingAddress: savedOrder.shipping_address,
+        shippingAddress: savedOrder.shipping_address || '',
+        totalPrice: savedOrder.total_price || 0,
+        unitPrice: savedOrder.unit_price || 0,
+        subtotal: savedOrder.subtotal || 0,
+        taxAmount: savedOrder.tax_amount || 0,
+        taxRate: savedOrder.tax_rate || 0,
+        customerInfo: {
+          name: savedOrder.customer_name || '',
+          email: savedOrder.customer_email || '',
+          address: savedOrder.customer_address || '',
+        },
+        phoneModel: savedOrder.phone_model || '',
+        shippingMethod: savedOrder.shipping_method || '',
+        shippingPrice: savedOrder.shipping_price || 0,
         quantity: savedOrder.quantity,
         createdAt: new Date(savedOrder.created_at),
         updatedAt: new Date(savedOrder.updated_at),
@@ -253,7 +355,7 @@ export default function App() {
       };
 
       setOrders(prev => [...prev, newOrder]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding order:', error);
       alert('Failed to create order. Please try again.');
     }
@@ -373,7 +475,7 @@ export default function App() {
 
           <TabsContent value="orders" className="mt-6">
             <OrderHistory 
-              orders={orders.filter(o => !currentUser.isAdmin)}
+              orders={orders.filter(o => o.userId === currentUser.id)}
               onUpdateOrder={updateOrderStatus}
               language={language}
             />

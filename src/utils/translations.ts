@@ -49,6 +49,8 @@ export const translations = {
     
     // Drawing Canvas
     designCanvas: 'Dizaina audekls',
+    drawYourDesign: 'Zīmējiet savu dizainu uz audekla',
+    reviewAndConfirmOrder: 'Pārskatiet un apstipriniet pasūtījumu',
     tools: 'Rīki',
     brush: 'Ota',
     eraser: 'Dzēšgumija',
@@ -75,11 +77,20 @@ export const translations = {
     cvc: 'CVC',
     zipCode: 'Pasta indekss',
     mockPayment: 'Izlikšanās maksājums (Stripe integrācija)',
+    // Order Preview & Pricing
+    unitPrice: 'Vienības cena',
+    priceBreakdown: 'Cenas sadalījums',
+    shippingMethod: 'Piegādes veids',
+    selectShippingMethod: 'Izvēlieties piegādes veidu',
+    unitPriceMultiple: 'Vienības cena × {quantity}',
+    taxPercentage: 'Nodoklis ({rate}%)',
+    
+    // Existing pricing
     subtotal: 'Starpsumma',
     shipping: 'Piegāde',
     tax: 'Nodoklis',
     total: 'Kopā',
-    processing: 'Apstrādā...',
+    processingOrder: 'Apstrādā...',
     placeOrder: 'Veikt pasūtījumu',
     
     // Order Success
@@ -97,18 +108,23 @@ export const translations = {
     status: 'Statuss',
     orderDate: 'Pasūtījuma datums',
     
-    // Order Status
-    pending: 'Gaida',
-    shipped: 'Nosūtīts',
-    delivered: 'Piegādāts',
-    
     // User Profile
     userProfile: 'Lietotāja profils',
+    profileInformation: 'Profila informācija',
+    manageAccount: 'Pārvaldiet savu kontu un skatiet savu aktivitāti',
     accountInfo: 'Konta informācija',
     name: 'Vārds',
+    administrator: 'Administrators',
     editProfile: 'Rediģēt profilu',
+    accountStats: 'Konta statistika',
+    designsCreated: 'Izveidotie dizaini',
+    ordersPlaced: 'Veiktie pasūtījumi',
+    totalSpent: 'Kopā iztērēts',
     recentDesigns: 'Jaunākie dizaini',
     recentOrders: 'Jaunākie pasūtījumi',
+    noDesignsCreated: 'Vēl nav izveidotu dizainu',
+    noOrdersPlaced: 'Vēl nav veiktu pasūtījumu',
+    qty: 'Daudzums',
     viewAll: 'Skatīt visu',
     
     // Company Dashboard
@@ -121,6 +137,48 @@ export const translations = {
     designDetails: 'Dizaina detaļas',
     customerDetails: 'Klienta informācija',
     phoneCase: 'Telefona vāciņš',
+    orderStatusOverview: 'Pasūtījumu statusa pārskats',
+    allStatus: 'Visi statusi',
+    newestFirst: 'Jaunākie vispirms',
+    oldestFirst: 'Vecākie vispirms',
+    highestValue: 'Augstākā vērtība',
+    lowestValue: 'Zemākā vērtība',
+    noOrdersFound: 'Nav atrasti pasūtījumi',
+    noOrdersYet: 'Pasūtījumi vēl nav veikti.',
+    noFilteredOrders: 'Nav atrasti {status} pasūtījumi.',
+    customer: 'Klients',
+    product: 'Produkts',
+    orderMetrics: 'Pasūtījumu rādītāji',
+    averageOrderValue: 'Vidējā pasūtījuma vērtība',
+    totalItemsSold: 'Kopā pārdoto preču',
+    conversionRate: 'Konversijas līmenis',
+    
+    // Order Timeline
+    orderPlacedTimeline: 'Pasūtījums veikts',
+    orderProcessing: 'Apstrāde',
+    orderShipped: 'Nosūtīts',
+    orderCompleted: 'Pabeigts',
+    shipTo: 'Piegādāt uz',
+    
+    // Quick Address Input
+    quickAddressInput: 'Ātrā adreses ievade',
+    pasteFormattedAddress: 'Ielīmējiet formatētu adresi šeit (Vārds, Adrese, Pilsēta, Valsts)',
+    addressFormatInstructions: 'Ielīmējiet adresi formātā: Vārds\\nIelas adrese\\nPilsēta, Novads Pasta_indekss\\nValsts',
+    
+    // Form Fields
+    addressLine1: 'Adrese 1',
+    addressLine2: 'Adrese 2',
+    streetAddress: 'Ielas adrese',
+    apartmentSuite: 'Dzīvoklis, komplekss, utt. (neobligāts)',
+    city: 'Pilsēta',
+    stateProvince: 'Novads/Province',
+    stateProvincePlaceholder: 'Novads/Province',
+    country: 'Valsts',
+    selectCountry: 'Izvēlieties valsti',
+    phoneNumber: 'Tālruņa numurs',
+    phoneOptional: 'Tālruņa numurs (neobligāts)',
+    emailOptional: 'E-pasts (neobligāts)',
+    zipCodePlaceholder: 'Pasta/ZIP kods',
     
     // Materials
     'tpu-gel': 'TPU/Gel',
@@ -142,6 +200,11 @@ export const translations = {
     // Common
     required: 'obligāts',
     close: 'Aizvērt',
+    
+    // Alerts
+    designNameRequired: 'Lūdzu, norādiet dizaina nosaukumu un izvēlieties tālruņa modeli',
+    saveDesignFirst: 'Lūdzu, vispirms saglabājiet savu dizainu',
+    failedToSave: 'Neizdevās saglabāt dizainu. Lūdzu, mēģiniet vēlreiz.',
     
     // Language Toggle
     language: 'Valoda',
@@ -193,6 +256,8 @@ export const translations = {
     
     // Drawing Canvas
     designCanvas: 'Design Canvas',
+    drawYourDesign: 'Draw your design on the canvas',
+    reviewAndConfirmOrder: 'Review and confirm your order',
     tools: 'Tools',
     brush: 'Brush',
     eraser: 'Eraser',
@@ -219,11 +284,20 @@ export const translations = {
     cvc: 'CVC',
     zipCode: 'ZIP Code',
     mockPayment: 'Mock Payment (Stripe Integration)',
+    // Order Preview & Pricing
+    unitPrice: 'Unit Price',
+    priceBreakdown: 'Price Breakdown',
+    shippingMethod: 'Shipping Method',
+    selectShippingMethod: 'Select shipping method',
+    unitPriceMultiple: 'Unit Price × {quantity}',
+    taxPercentage: 'Tax ({rate}%)',
+    
+    // Existing pricing
     subtotal: 'Subtotal',
     shipping: 'Shipping',
     tax: 'Tax',
     total: 'Total',
-    processing: 'Processing...',
+    processingOrder: 'Processing...',
     placeOrder: 'Place Order',
     
     // Order Success
@@ -248,11 +322,21 @@ export const translations = {
     
     // User Profile
     userProfile: 'User Profile',
+    profileInformation: 'Profile Information',
+    manageAccount: 'Manage your account and view your activity',
     accountInfo: 'Account Information',
     name: 'Name',
+    administrator: 'Administrator',
     editProfile: 'Edit Profile',
+    accountStats: 'Account Stats',
+    designsCreated: 'Designs Created',
+    ordersPlaced: 'Orders Placed',
+    totalSpent: 'Total Spent',
     recentDesigns: 'Recent Designs',
     recentOrders: 'Recent Orders',
+    noDesignsCreated: 'No designs created yet',
+    noOrdersPlaced: 'No orders placed yet',
+    qty: 'Qty',
     viewAll: 'View All',
     
     // Company Dashboard
@@ -265,6 +349,48 @@ export const translations = {
     designDetails: 'Design Details',
     customerDetails: 'Customer Information',
     phoneCase: 'Phone Case',
+    orderStatusOverview: 'Order Status Overview',
+    allStatus: 'All Status',
+    newestFirst: 'Newest First',
+    oldestFirst: 'Oldest First',
+    highestValue: 'Highest Value',
+    lowestValue: 'Lowest Value',
+    noOrdersFound: 'No Orders Found',
+    noOrdersYet: 'No orders have been placed yet.',
+    noFilteredOrders: 'No {status} orders found.',
+    customer: 'Customer',
+    product: 'Product',
+    orderMetrics: 'Order Metrics',
+    averageOrderValue: 'Average Order Value',
+    totalItemsSold: 'Total Items Sold',
+    conversionRate: 'Conversion Rate',
+    
+    // Order Timeline
+    orderPlacedTimeline: 'Order Placed',
+    orderProcessing: 'Processing',
+    orderShipped: 'Shipped',
+    orderCompleted: 'Completed',
+    shipTo: 'Ship to',
+    
+    // Quick Address Input
+    quickAddressInput: 'Quick Address Input',
+    pasteFormattedAddress: 'Paste formatted address here (Name, Address, City, Country)',
+    addressFormatInstructions: 'Paste address in format: Name\\nStreet Address\\nCity, State ZIP\\nCountry',
+    
+    // Form Fields
+    addressLine1: 'Address Line 1',
+    addressLine2: 'Address Line 2',
+    streetAddress: 'Street address',
+    apartmentSuite: 'Apartment, suite, etc. (optional)',
+    city: 'City',
+    stateProvince: 'State/Province',
+    stateProvincePlaceholder: 'State/Province',
+    country: 'Country',
+    selectCountry: 'Select country',
+    phoneNumber: 'Phone Number',
+    phoneOptional: 'Phone number (optional)',
+    emailOptional: 'Email (optional)',
+    zipCodePlaceholder: 'ZIP/Postal code',
     
     // Phone Models
     'iphone-15-pro': 'iPhone 15 Pro',
@@ -282,6 +408,11 @@ export const translations = {
     // Common
     required: 'required',
     close: 'Close',
+    
+    // Alerts
+    designNameRequired: 'Please provide a design name and select a phone model',
+    saveDesignFirst: 'Please save your design first',
+    failedToSave: 'Failed to save design. Please try again.',
     
     // Language Toggle
     language: 'Language',

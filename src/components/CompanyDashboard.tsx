@@ -36,7 +36,7 @@ const getStatusConfig = (language: Language) => ({
   pending: { icon: Clock, color: 'bg-yellow-100 text-yellow-800', label: t(language, 'pending') },
   processing: { icon: Package, color: 'bg-blue-100 text-blue-800', label: t(language, 'processing') },
   shipped: { icon: Truck, color: 'bg-purple-100 text-purple-800', label: t(language, 'shipped') },
-  delivered: { icon: CheckCircle, color: 'bg-green-100 text-green-800', label: t(language, 'delivered') }
+  completed: { icon: CheckCircle, color: 'bg-green-100 text-green-800', label: t(language, 'completed') }
 });
 
 export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, language }: CompanyDashboardProps) {
@@ -51,7 +51,7 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
   const processingOrders = orders.filter(o => o.status === 'processing').length;
   const shippedOrders = orders.filter(o => o.status === 'shipped').length;
-  const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
+  const completedOrders = orders.filter(o => o.status === 'completed').length;
 
   // Filter and sort orders
   const filteredOrders = orders.filter(order => 
@@ -157,29 +157,29 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
           {/* Order Status Overview */}
           <Card>
             <CardHeader>
-              <CardTitle>Order Status Overview</CardTitle>
+              <CardTitle>{t(language, 'orderStatusOverview')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-4 border rounded-lg">
                   <Clock className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
                   <p className="text-2xl font-bold">{pendingOrders}</p>
-                  <p className="text-sm text-muted-foreground">Pending</p>
+                  <p className="text-sm text-muted-foreground">{t(language, 'pending')}</p>
                 </div>
                 <div className="text-center p-4 border rounded-lg">
                   <Package className="w-8 h-8 text-blue-600 mx-auto mb-2" />
                   <p className="text-2xl font-bold">{processingOrders}</p>
-                  <p className="text-sm text-muted-foreground">Processing</p>
+                  <p className="text-sm text-muted-foreground">{t(language, 'processing')}</p>
                 </div>
                 <div className="text-center p-4 border rounded-lg">
                   <Truck className="w-8 h-8 text-purple-600 mx-auto mb-2" />
                   <p className="text-2xl font-bold">{shippedOrders}</p>
-                  <p className="text-sm text-muted-foreground">Shipped</p>
+                  <p className="text-sm text-muted-foreground">{t(language, 'shipped')}</p>
                 </div>
                 <div className="text-center p-4 border rounded-lg">
                   <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold">{deliveredOrders}</p>
-                  <p className="text-sm text-muted-foreground">Delivered</p>
+                  <p className="text-2xl font-bold">{completedOrders}</p>
+                  <p className="text-sm text-muted-foreground">{t(language, 'completed')}</p>
                 </div>
               </div>
             </CardContent>
@@ -198,11 +198,11 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="processing">Processing</SelectItem>
-                      <SelectItem value="shipped">Shipped</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
+                      <SelectItem value="all">{t(language, 'allStatus')}</SelectItem>
+                      <SelectItem value="pending">{t(language, 'pending')}</SelectItem>
+                      <SelectItem value="processing">{t(language, 'processing')}</SelectItem>
+                      <SelectItem value="shipped">{t(language, 'shipped')}</SelectItem>
+                      <SelectItem value="completed">{t(language, 'completed')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -211,10 +211,10 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="newest">Newest First</SelectItem>
-                    <SelectItem value="oldest">Oldest First</SelectItem>
-                    <SelectItem value="highest">Highest Value</SelectItem>
-                    <SelectItem value="lowest">Lowest Value</SelectItem>
+                    <SelectItem value="newest">{t(language, 'newestFirst')}</SelectItem>
+                    <SelectItem value="oldest">{t(language, 'oldestFirst')}</SelectItem>
+                    <SelectItem value="highest">{t(language, 'highestValue')}</SelectItem>
+                    <SelectItem value="lowest">{t(language, 'lowestValue')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -227,9 +227,9 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
               <Card>
                 <CardContent className="p-8 text-center">
                   <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <h3 className="text-lg font-medium mb-2">No Orders Found</h3>
+                  <h3 className="text-lg font-medium mb-2">{t(language, 'noOrdersFound')}</h3>
                   <p className="text-muted-foreground">
-                    {statusFilter === 'all' ? 'No orders have been placed yet.' : `No ${statusFilter} orders found.`}
+                    {statusFilter === 'all' ? t(language, 'noOrdersYet') : t(language, 'noFilteredOrders').replace('{status}', statusFilter)}
                   </p>
                 </CardContent>
               </Card>
@@ -270,10 +270,10 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
                                   </Badge>
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="pending">Pending</SelectItem>
-                                  <SelectItem value="processing">Processing</SelectItem>
-                                  <SelectItem value="shipped">Shipped</SelectItem>
-                                  <SelectItem value="delivered">Delivered</SelectItem>
+                                  <SelectItem value="pending">{t(language, 'pending')}</SelectItem>
+                                  <SelectItem value="processing">{t(language, 'processing')}</SelectItem>
+                                  <SelectItem value="shipped">{t(language, 'shipped')}</SelectItem>
+                                  <SelectItem value="completed">{t(language, 'completed')}</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -281,23 +281,23 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
 
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                             <div>
-                              <p className="text-muted-foreground">Customer</p>
+                              <p className="text-muted-foreground">{t(language, 'customer')}</p>
                               <p className="font-medium">{order.customerInfo.name}</p>
                               <p className="text-xs text-muted-foreground">{order.customerInfo.email}</p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Product</p>
+                              <p className="text-muted-foreground">{t(language, 'product')}</p>
                               <p className="font-medium">
                                 {order.phoneModel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                               </p>
                               <p className="text-xs text-muted-foreground">Qty: {order.quantity}</p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Total</p>
+                              <p className="text-muted-foreground">{t(language, 'total')}</p>
                               <p className="font-medium text-lg">${order.totalPrice.toFixed(2)}</p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">Order Date</p>
+                              <p className="text-muted-foreground">{t(language, 'orderDate')}</p>
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
                                 <p className="font-medium">{new Date(order.createdAt).toLocaleDateString()}</p>
@@ -307,10 +307,46 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
 
                           {/* Shipping Address */}
                           <div className="bg-muted/50 p-3 rounded-lg">
-                            <p className="text-sm font-medium mb-1">Shipping Address:</p>
+                            <p className="text-sm font-medium mb-1">{t(language, 'shippingAddress')}:</p>
                             <p className="text-sm text-muted-foreground">
                               {order.customerInfo.address}
                             </p>
+                          </div>
+
+                          {/* Shipping Method */}
+                          <div className="bg-muted/50 p-3 rounded-lg">
+                            <p className="text-sm font-medium mb-1">{t(language, 'shippingMethod')}:</p>
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-muted-foreground">{order.shippingMethod}</p>
+                              <p className="text-sm font-medium">${order.shippingPrice.toFixed(2)}</p>
+                            </div>
+                          </div>
+
+                          {/* Price Breakdown */}
+                          <div className="bg-muted/50 p-3 rounded-lg">
+                            <p className="text-sm font-medium mb-2">{t(language, 'priceBreakdown')}:</p>
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-muted-foreground">{t(language, 'unitPrice')} × {order.quantity}</span>
+                                <span>${order.unitPrice.toFixed(2)} × {order.quantity}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-muted-foreground">{t(language, 'subtotal')}</span>
+                                <span>${order.subtotal.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-muted-foreground">{t(language, 'shipping')}</span>
+                                <span>${order.shippingPrice.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-muted-foreground">{t(language, 'tax')} ({(order.taxRate * 100).toFixed(1)}%)</span>
+                                <span>${order.taxAmount.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm font-medium border-t pt-1">
+                                <span>{t(language, 'total')}</span>
+                                <span>${order.totalPrice.toFixed(2)}</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -333,37 +369,37 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
                   <h4 className="font-medium mb-3">Revenue Breakdown</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span>Pending Orders</span>
+                      <span>{t(language, 'pendingOrders')}</span>
                       <span>${orders.filter(o => o.status === 'pending').reduce((sum, o) => sum + o.totalPrice, 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Processing Orders</span>
+                      <span>{t(language, 'processing')} Orders</span>
                       <span>${orders.filter(o => o.status === 'processing').reduce((sum, o) => sum + o.totalPrice, 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Shipped Orders</span>
+                      <span>{t(language, 'shipped')} Orders</span>
                       <span>${orders.filter(o => o.status === 'shipped').reduce((sum, o) => sum + o.totalPrice, 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm font-medium">
-                      <span>Delivered Orders</span>
-                      <span>${orders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.totalPrice, 0).toFixed(2)}</span>
+                      <span>{t(language, 'completedOrders')}</span>
+                      <span>${orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + o.totalPrice, 0).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="font-medium mb-3">Order Metrics</h4>
+                  <h4 className="font-medium mb-3">{t(language, 'orderMetrics')}</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span>Average Order Value</span>
+                      <span>{t(language, 'averageOrderValue')}</span>
                       <span>${orders.length > 0 ? (totalRevenue / orders.length).toFixed(2) : '0.00'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Total Items Sold</span>
+                      <span>{t(language, 'totalItemsSold')}</span>
                       <span>{orders.reduce((sum, o) => sum + o.quantity, 0)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Conversion Rate</span>
+                      <span>{t(language, 'conversionRate')}</span>
                       <span>{designs.length > 0 ? ((orders.length / designs.length) * 100).toFixed(1) : '0'}%</span>
                     </div>
                   </div>
