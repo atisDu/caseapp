@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -15,18 +15,19 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Language, t } from '../utils/translations';
 import { supabase } from '../utils/supabase/client';
 
-const MATERIALS = [{ id: 'tpu-gel', name: 'TPU/Gel'}];
+interface PhoneModel {
+  id: string;
+  name: string;
+  price: number;
+  is_active: boolean;
+}
 
-const PHONE_MODELS = [
-  { id: 'iphone-15-pro', name: 'iPhone 15 Pro', price: 29.99 },
-  { id: 'iphone-15', name: 'iPhone 15', price: 27.99 },
-  { id: 'iphone-14-pro', name: 'iPhone 14 Pro', price: 29.99 },
-  { id: 'iphone-14', name: 'iPhone 14', price: 27.99 },
-  { id: 'samsung-s24', name: 'Samsung Galaxy S24', price: 28.99 },
-  { id: 'samsung-s23', name: 'Samsung Galaxy S23', price: 26.99 },
-  { id: 'pixel-8-pro', name: 'Google Pixel 8 Pro', price: 28.99 },
-  { id: 'pixel-8', name: 'Google Pixel 8', price: 26.99 },
-];
+interface Material {
+  id: string;
+  name: string;
+  description?: string;
+  is_active: boolean;
+}
 
 interface DesignStudioProps {
   designs: Design[];
@@ -47,14 +48,60 @@ export function DesignStudio({
   currentUser,
   language
 }: DesignStudioProps) {
+  const [phoneModels, setPhoneModels] = useState<PhoneModel[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentDesign, setCurrentDesign] = useState<Design | null>(null);
   const [designName, setDesignName] = useState('');
   const [selectedPhoneModel, setSelectedPhoneModel] = useState('');
-  const [selectedMaterial, setSelectedMaterial] = useState(MATERIALS[0].id);
+  const [selectedMaterial, setSelectedMaterial] = useState('');
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [showDrawing, setShowDrawing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    loadProductData();
+  }, []);
+
+  const loadProductData = async () => {
+    setLoading(true);
+    try {
+      // Load phone models
+      const { data: phoneData, error: phoneError } = await supabase
+        .from('phone_models')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (phoneError) {
+        console.error('Error loading phone models:', phoneError);
+      } else {
+        setPhoneModels(phoneData || []);
+      }
+
+      // Load materials
+      const { data: materialData, error: materialError } = await supabase
+        .from('materials')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (materialError) {
+        console.error('Error loading materials:', materialError);
+      } else {
+        setMaterials(materialData || []);
+        // Set default material if available
+        if (materialData && materialData.length > 0) {
+          setSelectedMaterial(materialData[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading product data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -178,6 +225,16 @@ export function DesignStudio({
     }
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center p-8">
+          <p>Loading product data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -219,9 +276,9 @@ export function DesignStudio({
                     <SelectValue placeholder={t(language, 'selectPhoneModel')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {PHONE_MODELS.map((model) => (
+                    {phoneModels.map((model) => (
                       <SelectItem key={model.id} value={model.id}>
-                        {t(language, model.id as any)} - ${model.price}
+                        {model.name} - ${model.price}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -232,12 +289,14 @@ export function DesignStudio({
                 <Label htmlFor="material">{t(language, 'material')}</Label>
                 <Select value={selectedMaterial} onValueChange={setSelectedMaterial}>
                   <SelectTrigger>
-                    <SelectValue>{t(language, selectedMaterial as any)}</SelectValue>
+                    <SelectValue placeholder={t(language, 'selectMaterial')}>
+                      {selectedMaterial && materials.find(m => m.id === selectedMaterial)?.name}
+                    </SelectValue>
                   </SelectTrigger>  
                   <SelectContent>
-                    {MATERIALS.map((material) => (
+                    {materials.map((material) => (
                       <SelectItem key={material.id} value={material.id}>
-                        {t(language, material.id as any)}
+                        {material.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -315,13 +374,13 @@ export function DesignStudio({
                 <span>{t(language, 'designPreview')}</span>
                 {selectedPhoneModel && (
                   <span className="text-sm font-normal text-muted-foreground">
-                    {t(language, selectedPhoneModel as any)}
+                    {phoneModels.find(m => m.id === selectedPhoneModel)?.name || selectedPhoneModel}
                   </span>
                 )}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="aspect-[3/4] rounded-lg flex items-center justify-center relative">
+            <CardContent className="p-4">
+              <div className="aspect-[75/159] rounded-lg flex items-center justify-center relative max-w-[280px] mx-auto">
                 {selectedPhoneModel ? (
                   <PhoneCaseMockup
                     phoneModel={selectedPhoneModel}

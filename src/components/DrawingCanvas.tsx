@@ -46,7 +46,7 @@ export function DrawingCanvas({ initialImage, onSave, onCancel, language }: Draw
   const [color, setColor] = useState('#000000');
   const [history, setHistory] = useState<ImageData[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(0.5);
   const [lastPoint, setLastPoint] = useState<{x: number, y: number} | null>(null);
 
   useEffect(() => {
@@ -56,9 +56,9 @@ export function DrawingCanvas({ initialImage, onSave, onCancel, language }: Draw
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size - much larger for better drawing area
-    canvas.width = 800;
-    canvas.height = 1000;
+    // Set canvas size - 750x1590px for consistent design dimensions
+    canvas.width = 750;
+    canvas.height = 1590;
 
     // White background
     ctx.fillStyle = '#FFFFFF';
@@ -200,11 +200,11 @@ export function DrawingCanvas({ initialImage, onSave, onCancel, language }: Draw
   };
 
   const zoomOut = () => {
-    setZoom(prev => Math.max(prev - 0.25, 0.5));
+    setZoom(prev => Math.max(prev - 0.25, 0.2));
   };
 
   const resetZoom = () => {
-    setZoom(1);
+    setZoom(0.5);
   };
 
   const handleSave = () => {
@@ -267,7 +267,7 @@ export function DrawingCanvas({ initialImage, onSave, onCancel, language }: Draw
                 variant="outline"
                 size="sm"
                 onClick={zoomOut}
-                disabled={zoom <= 0.5}
+                disabled={zoom <= 0.2}
                 className="flex items-center gap-1"
               >
                 <ZoomOut className="w-3 h-3" />
@@ -391,10 +391,10 @@ export function DrawingCanvas({ initialImage, onSave, onCancel, language }: Draw
       </Card>
 
       {/* Canvas */}
-      <div className="flex-1 flex items-center justify-center min-h-0 overflow-auto">
+      <div className="flex-1 flex items-center justify-center min-h-0 overflow-auto p-4">
         <div 
           ref={containerRef}
-          className="border border-border rounded-lg p-2 sm:p-4 bg-white shadow-lg"
+          className="border border-border rounded-lg p-1 bg-white shadow-lg max-w-full max-h-full"
           style={{ 
             transform: `scale(${zoom})`,
             transformOrigin: 'center center'
@@ -408,8 +408,8 @@ export function DrawingCanvas({ initialImage, onSave, onCancel, language }: Draw
             onMouseLeave={stopDrawing}
             className="border border-border rounded cursor-crosshair"
             style={{ 
-              width: '600px',
-              height: '750px',
+              width: '500px',
+              height: '1060px',
               display: 'block'
             }}
           />

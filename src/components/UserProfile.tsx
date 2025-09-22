@@ -8,7 +8,7 @@ import { Separator } from './ui/separator';
 import { Design, Order, User } from '../App';
 import { User as UserIcon, Package, Palette, ShoppingCart, Calendar, Edit2, Save, X } from 'lucide-react';
 import { PhoneCaseMockup } from './PhoneCaseMockup';
-import { Language, t } from '../utils/translations';
+import { Language, t, getPhoneModelDisplayName } from '../utils/translations';
 
 interface UserProfileProps {
   user: User;
@@ -169,7 +169,7 @@ export function UserProfile({ user, onUpdateUser, designs, orders, language }: U
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium truncate">{design.name}</h4>
                         <p className="text-xs text-muted-foreground">
-                          {design.phoneModel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          {getPhoneModelDisplayName(language, design.phoneModel)}
                         </p>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                           <Calendar className="w-3 h-3" />

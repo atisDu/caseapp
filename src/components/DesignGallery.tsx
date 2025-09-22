@@ -6,7 +6,7 @@ import { Design } from '../App';
 import { Eye, Trash2, Edit, Calendar, ShoppingCart } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { PhoneCaseMockup } from './PhoneCaseMockup';
-import { Language, t } from '../utils/translations';
+import { Language, t, getPhoneModelDisplayName } from '../utils/translations';
 
 interface DesignGalleryProps {
   designs: Design[];
@@ -45,7 +45,7 @@ export function DesignGallery({ designs, onLoadDesign, onDeleteDesign, onOrderDe
             <div key={design.id} className="group relative">
               <Card className="transition-shadow hover:shadow-md">
                 <CardContent className="p-4">
-                  <div className="aspect-[3/4] bg-muted rounded-lg mb-3 overflow-hidden relative">
+                  <div className="aspect-[75/159] bg-muted rounded-lg mb-3 overflow-hidden relative">
                     <PhoneCaseMockup
                       phoneModel={design.phoneModel}
                       designImage={design.imageDataUrl}
@@ -61,7 +61,7 @@ export function DesignGallery({ designs, onLoadDesign, onDeleteDesign, onOrderDe
                     
                     {design.phoneModel && (
                       <Badge variant="secondary" className="text-xs">
-                        {design.phoneModel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        {getPhoneModelDisplayName(language, design.phoneModel)}
                       </Badge>
                     )}
                     

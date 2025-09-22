@@ -6,7 +6,7 @@ import { Order } from '../App';
 import { Package, Calendar, DollarSign, Truck, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { PhoneCaseMockup } from './PhoneCaseMockup';
-import { Language, t } from '../utils/translations';
+import { Language, t, getPhoneModelDisplayName } from '../utils/translations';
 
 interface OrderHistoryProps {
   orders: Order[];
@@ -100,12 +100,12 @@ export function OrderHistory({ orders, onUpdateOrder, language }: OrderHistoryPr
                       <div className="flex items-center gap-2">
                         <Package className="w-4 h-4 text-muted-foreground" />
                         <span>
-                          {order.design.phoneModel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} × {order.quantity}
+                          {getPhoneModelDisplayName(language, order.design.phoneModel)} × {order.quantity}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4 text-muted-foreground" />
-                        <span>Qty: {order.quantity}</span>
+                        <span>{t(language, 'orderQuantity')}: {order.quantity}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-muted-foreground" />

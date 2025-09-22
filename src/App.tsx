@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Button } from './components/ui/button';
 import { Badge } from './components/ui/badge';
@@ -243,6 +243,60 @@ export default function App() {
     }
   };
 
+  // Update order status function
+  const updateOrderStatus = useCallback(async (orderId: string, status: Order['status']) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status, updatedAt: new Date() } : o));
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      alert('Failed to update order status. Please try again.');
+    }
+  }, []);
+
+  // Auto-complete shipped orders after 14 days
+  useEffect(() => {
+    const checkAndCompleteOrders = async () => {
+      if (!currentUser) return;
+
+      const now = new Date();
+      const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+      // Find shipped orders that are older than 14 days
+      const ordersToComplete = orders.filter(order => 
+        order.status === 'shipped' && 
+        new Date(order.updatedAt) <= fourteenDaysAgo
+      );
+
+      // Update each order to completed status
+      for (const order of ordersToComplete) {
+        try {
+          await updateOrderStatus(order.id, 'completed');
+          console.log(`Auto-completed order ${order.id} after 14 days`);
+        } catch (error) {
+          console.error(`Failed to auto-complete order ${order.id}:`, error);
+        }
+      }
+    };
+
+    // Check immediately when orders change
+    checkAndCompleteOrders();
+
+    // Set up interval to check every hour
+    const interval = setInterval(checkAndCompleteOrders, 60 * 60 * 1000); // 1 hour
+
+    return () => clearInterval(interval);
+  }, [orders, currentUser, updateOrderStatus]);
+
   // Save language to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('phonecase-language', language);
@@ -358,25 +412,6 @@ export default function App() {
     } catch (error: any) {
       console.error('Error adding order:', error);
       alert('Failed to create order. Please try again.');
-    }
-  };
-
-  const updateOrderStatus = async (orderId: string, status: Order['status']) => {
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ 
-          status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', orderId);
-
-      if (error) throw error;
-
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status, updatedAt: new Date() } : o));
-    } catch (error) {
-      console.error('Error updating order status:', error);
-      alert('Failed to update order status. Please try again.');
     }
   };
 

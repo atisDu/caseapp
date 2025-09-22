@@ -153,12 +153,49 @@ export const translations = {
     totalItemsSold: 'Kopā pārdoto preču',
     conversionRate: 'Konversijas līmenis',
     
+    // Admin Product Management
+    productManagement: 'Produktu pārvaldība',
+    phoneModels: 'Telefonu modeļi',
+    caseMaterials: 'Vāciņu materiāli',
+    addPhoneModel: 'Pievienot telefona modeli',
+    addMaterial: 'Pievienot materiālu',
+    editPhoneModel: 'Rediģēt telefona modeli',
+    editMaterial: 'Rediģēt materiālu',
+    deletePhoneModel: 'Dzēst telefona modeli',
+    deleteMaterial: 'Dzēst materiālu',
+    modelId: 'Modeļa ID',
+    modelName: 'Modeļa nosaukums',
+    modelPrice: 'Cena ($)',
+    materialId: 'Materiāla ID',
+    materialName: 'Materiāla nosaukums',
+    materialDescription: 'Materiāla apraksts',
+    descriptionOptional: 'Apraksts (neobligāts)',
+    active: 'Aktīvs',
+    inactive: 'Neaktīvs',
+    activate: 'Aktivizēt',
+    deactivate: 'Deaktivizēt',
+    saving: 'Saglabā...',
+    loading: 'Ielādē...',
+    noPhoneModelsFound: 'Nav atrasti telefonu modeļi. Pievienojiet vienu, lai sāktu.',
+    noMaterialsFound: 'Nav atrasti materiāli. Pievienojiet vienu, lai sāktu.',
+    pleaseProvideModelName: 'Lūdzu, ievadiet modeļa nosaukumu',
+    pleaseProvideMaterialName: 'Lūdzu, ievadiet materiāla nosaukumu',
+    fillAllRequiredFields: 'Lūdzu, aizpildiet visus obligātos laukus',
+    deleteConfirmation: 'Vai tiešām vēlaties dzēst "{name}"? Šo darbību nevar atsaukt.',
+    errorSavingPhoneModel: 'Kļūda, saglabājot telefona modeli',
+    errorSavingMaterial: 'Kļūda, saglabājot materiālu',
+    errorDeletingPhoneModel: 'Kļūda, dzēšot telefona modeli',
+    errorDeletingMaterial: 'Kļūda, dzēšot materiālu',
+    errorUpdatingStatus: 'Kļūda, atjauninot statusu',
+    loadingProductData: 'Ielādē produktu datus...',
+    
     // Order Timeline
     orderPlacedTimeline: 'Pasūtījums veikts',
     orderProcessing: 'Apstrāde',
     orderShipped: 'Nosūtīts',
     orderCompleted: 'Pabeigts',
     shipTo: 'Piegādāt uz',
+    orderQuantity: 'Daudzums',
     
     // Quick Address Input
     quickAddressInput: 'Ātrā adreses ievade',
@@ -365,12 +402,49 @@ export const translations = {
     totalItemsSold: 'Total Items Sold',
     conversionRate: 'Conversion Rate',
     
+    // Admin Product Management
+    productManagement: 'Product Management',
+    phoneModels: 'Phone Models',
+    caseMaterials: 'Case Materials',
+    addPhoneModel: 'Add Phone Model',
+    addMaterial: 'Add Material',
+    editPhoneModel: 'Edit Phone Model',
+    editMaterial: 'Edit Material',
+    deletePhoneModel: 'Delete Phone Model',
+    deleteMaterial: 'Delete Material',
+    modelId: 'Model ID',
+    modelName: 'Model Name',
+    modelPrice: 'Price ($)',
+    materialId: 'Material ID',
+    materialName: 'Material Name',
+    materialDescription: 'Material Description',
+    descriptionOptional: 'Description (optional)',
+    active: 'Active',
+    inactive: 'Inactive',
+    activate: 'Activate',
+    deactivate: 'Deactivate',
+    saving: 'Saving...',
+    loading: 'Loading...',
+    noPhoneModelsFound: 'No phone models found. Add one to get started.',
+    noMaterialsFound: 'No materials found. Add one to get started.',
+    pleaseProvideModelName: 'Please provide a model name',
+    pleaseProvideMaterialName: 'Please provide a material name',
+    fillAllRequiredFields: 'Please fill in all required fields',
+    deleteConfirmation: 'Are you sure you want to delete "{name}"? This action cannot be undone.',
+    errorSavingPhoneModel: 'Error saving phone model',
+    errorSavingMaterial: 'Error saving material',
+    errorDeletingPhoneModel: 'Error deleting phone model',
+    errorDeletingMaterial: 'Error deleting material',
+    errorUpdatingStatus: 'Error updating status',
+    loadingProductData: 'Loading product data...',
+    
     // Order Timeline
     orderPlacedTimeline: 'Order Placed',
     orderProcessing: 'Processing',
     orderShipped: 'Shipped',
     orderCompleted: 'Completed',
     shipTo: 'Ship to',
+    orderQuantity: 'Quantity',
     
     // Quick Address Input
     quickAddressInput: 'Quick Address Input',
@@ -430,4 +504,16 @@ export function getTranslation(language: Language, key: TranslationKey): string 
 
 export function t(language: Language, key: TranslationKey): string {
   return getTranslation(language, key);
+}
+
+// Helper function to get phone model display name
+export function getPhoneModelDisplayName(language: Language, phoneModelId: string): string {
+  // Try to get translation first
+  const translationKey = phoneModelId as TranslationKey;
+  if (translations[language][translationKey]) {
+    return translations[language][translationKey];
+  }
+  
+  // Fall back to formatted ID
+  return phoneModelId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }

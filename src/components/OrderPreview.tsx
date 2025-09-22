@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -13,17 +13,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Language, t } from '../utils/translations';
 import { SHIPPING_OPTIONS } from '../constants/shipping-options';
 import { COUNTRIES } from '../constants/countries';
+import { supabase } from '../utils/supabase/client';
 
-const PHONE_MODELS = [
-  { id: 'iphone-15-pro', name: 'iPhone 15 Pro', price: 29.99 },
-  { id: 'iphone-15', name: 'iPhone 15', price: 27.99 },
-  { id: 'iphone-14-pro', name: 'iPhone 14 Pro', price: 29.99 },
-  { id: 'iphone-14', name: 'iPhone 14', price: 27.99 },
-  { id: 'samsung-s24', name: 'Samsung Galaxy S24', price: 28.99 },
-  { id: 'samsung-s23', name: 'Samsung Galaxy S23', price: 26.99 },
-  { id: 'pixel-8-pro', name: 'Google Pixel 8 Pro', price: 28.99 },
-  { id: 'pixel-8', name: 'Google Pixel 8', price: 26.99 },
-];
+interface PhoneModel {
+  id: string;
+  name: string;
+  price: number;
+  is_active: boolean;
+}
 
 interface OrderPreviewProps {
   design: Design;
@@ -34,11 +31,12 @@ interface OrderPreviewProps {
 }
 
 export function OrderPreview({ design, onCreateOrder, onClose, currentUser, language }: OrderPreviewProps) {
+  const [phoneModels, setPhoneModels] = useState<PhoneModel[]>([]);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [customerInfo, setCustomerInfo] = useState({
-    fullName: currentUser?.name || '',
-    name: currentUser?.name || '',  // For backward compatibility
-    address: '',  // For backward compatibility
+    name: currentUser?.name || '',
+    email: currentUser?.email || '',
     address1: '',
     address2: '',
     city: '',
@@ -46,13 +44,37 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
     zipCode: '',
     country: 'LV',
     phone: '',
-    email: currentUser?.email || '',
   });
   const [selectedShipping, setSelectedShipping] = useState(SHIPPING_OPTIONS[0].id);
   const [bulkInput, setBulkInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const phoneModel = PHONE_MODELS.find(m => m.id === design.phoneModel);
+  useEffect(() => {
+    loadPhoneModels();
+  }, []);
+
+  const loadPhoneModels = async () => {
+    setLoading(true);
+    try {
+      const { data: phoneData, error } = await supabase
+        .from('phone_models')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) {
+        console.error('Error loading phone models:', error);
+      } else {
+        setPhoneModels(phoneData || []);
+      }
+    } catch (error) {
+      console.error('Error loading phone models:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const phoneModel = phoneModels.find(m => m.id === design.phoneModel);
   const unitPrice = phoneModel?.price || 0;
   const subtotal = unitPrice * quantity;
   const shippingOption = SHIPPING_OPTIONS.find(s => s.id === selectedShipping);
@@ -105,7 +127,7 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
 
       setCustomerInfo(prev => ({
         ...prev,
-        fullName: lines[0] || prev.fullName,
+        name: lines[0] || prev.name,
         address1: lines[1] || prev.address1,
         address2: '', // Clear address2 since we're not using it in this format
         city: city || prev.city,
@@ -124,7 +146,7 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
 
   const handleSubmitOrder = async () => {
     const requiredFields = {
-      fullName: 'Full Name',
+      name: 'Full Name',
       address1: 'Address Line 1',
       city: 'City',
       zipCode: 'ZIP Code',
@@ -146,7 +168,7 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       const shippingAddress = [
-        customerInfo.fullName,
+        customerInfo.name,
         customerInfo.address1,
         customerInfo.address2,
         customerInfo.city,
@@ -170,7 +192,7 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
         taxAmount: tax,
         taxRate: 0.08,
         customerInfo: {
-          name: customerInfo.fullName,
+          name: customerInfo.name,
           email: customerInfo.email,
           address: shippingAddress
         },
@@ -202,7 +224,7 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="aspect-[3/4] max-w-xs mx-auto mb-4">
+          <div className="aspect-[75/159] max-w-xs mx-auto mb-4">
             <PhoneCaseMockup
               phoneModel={design.phoneModel}
               designImage={design.imageDataUrl}
@@ -266,11 +288,11 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
           {/* Customer Information */}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="fullName">{t(language, 'fullName')} *</Label>
+              <Label htmlFor="name">{t(language, 'fullName')} *</Label>
               <Input
-                id="fullName"
-                value={customerInfo.fullName}
-                onChange={(e) => setCustomerInfo(prev => ({ ...prev, fullName: e.target.value }))}
+                id="name"
+                value={customerInfo.name}
+                onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
                 placeholder={t(language, 'enterFullName')}
                 required
               />
@@ -413,7 +435,7 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
             className="w-full"
             size="lg"
             onClick={handleSubmitOrder}
-            disabled={isProcessing || !customerInfo.fullName || !customerInfo.address1 || 
+            disabled={isProcessing || !customerInfo.name || !customerInfo.address1 || 
                      !customerInfo.city || !customerInfo.zipCode || !customerInfo.country}
           >
             {isProcessing ? (

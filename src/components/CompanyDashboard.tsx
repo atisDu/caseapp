@@ -23,7 +23,8 @@ import {
 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { PhoneCaseMockup } from './PhoneCaseMockup';
-import { Language, t } from '../utils/translations';
+import { AdminProductManager } from './AdminProductManager';
+import { Language, t, getPhoneModelDisplayName } from '../utils/translations';
 
 interface CompanyDashboardProps {
   orders: Order[];
@@ -96,6 +97,9 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
           </TabsTrigger>
           <TabsTrigger value="orders">
             {language === 'lv' ? 'Pasūtījumu pārvaldība' : 'Order Management'}
+          </TabsTrigger>
+          <TabsTrigger value="products">
+            {language === 'lv' ? 'Produktu pārvaldība' : 'Product Management'}
           </TabsTrigger>
           <TabsTrigger value="analytics">
             {language === 'lv' ? 'Sīkāki dati' : 'Analytics'}
@@ -288,9 +292,9 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
                             <div>
                               <p className="text-muted-foreground">{t(language, 'product')}</p>
                               <p className="font-medium">
-                                {order.phoneModel.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                {getPhoneModelDisplayName(language, order.phoneModel)}
                               </p>
-                              <p className="text-xs text-muted-foreground">Qty: {order.quantity}</p>
+                              <p className="text-xs text-muted-foreground">{t(language, 'orderQuantity')}: {order.quantity}</p>
                             </div>
                             <div>
                               <p className="text-muted-foreground">{t(language, 'total')}</p>
@@ -356,6 +360,10 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
               })
             )}
           </div>
+        </TabsContent>
+
+        <TabsContent value="products" className="space-y-6">
+          <AdminProductManager language={language} />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
