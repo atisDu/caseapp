@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Order, Design } from '../App';
+import { User } from '../App';
 import { 
   Building, 
   Package, 
@@ -24,6 +25,7 @@ import {
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { PhoneCaseMockup } from './PhoneCaseMockup';
 import { AdminProductManager } from './AdminProductManager';
+import { PaymentManagement } from './PaymentManagement';
 import { Language, t, getPhoneModelDisplayName } from '../utils/translations';
 
 interface CompanyDashboardProps {
@@ -31,6 +33,7 @@ interface CompanyDashboardProps {
   onUpdateOrderStatus: (orderId: string, status: Order['status']) => void;
   designs: Design[];
   language: Language;
+  user: User;
 }
 
 const getStatusConfig = (language: Language) => ({
@@ -40,7 +43,7 @@ const getStatusConfig = (language: Language) => ({
   completed: { icon: CheckCircle, color: 'bg-green-100 text-green-800', label: t(language, 'completed') }
 });
 
-export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, language }: CompanyDashboardProps) {
+export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, language, user }: CompanyDashboardProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null);
@@ -100,6 +103,9 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
           </TabsTrigger>
           <TabsTrigger value="products">
             {language === 'lv' ? 'Produktu pārvaldība' : 'Product Management'}
+          </TabsTrigger>
+          <TabsTrigger value="payments">
+            {t(language, 'paymentManagement')}
           </TabsTrigger>
           <TabsTrigger value="analytics">
             {language === 'lv' ? 'Sīkāki dati' : 'Analytics'}
@@ -364,6 +370,10 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
 
         <TabsContent value="products" className="space-y-6">
           <AdminProductManager language={language} />
+        </TabsContent>
+
+        <TabsContent value="payments" className="space-y-6">
+          <PaymentManagement language={language} adminEmail={user.email} />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">

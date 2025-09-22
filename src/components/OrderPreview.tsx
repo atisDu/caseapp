@@ -11,9 +11,9 @@ import { ShoppingCart, CreditCard, Truck, Package } from 'lucide-react';
 import { PhoneCaseMockup } from './PhoneCaseMockup';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Language, t } from '../utils/translations';
-import { SHIPPING_OPTIONS } from '../constants/shipping-options';
 import { COUNTRIES } from '../constants/countries';
 import { supabase } from '../utils/supabase/client';
+import { getShippingMethods, ShippingMethod, getUserBalance, createPaymentTransaction } from '../utils/supabase/data';
 
 interface PhoneModel {
   id: string;
@@ -32,6 +32,8 @@ interface OrderPreviewProps {
 
 export function OrderPreview({ design, onCreateOrder, onClose, currentUser, language }: OrderPreviewProps) {
   const [phoneModels, setPhoneModels] = useState<PhoneModel[]>([]);
+  const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
+  const [userBalance, setUserBalance] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [customerInfo, setCustomerInfo] = useState({
@@ -45,30 +47,44 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
     country: 'LV',
     phone: '',
   });
-  const [selectedShipping, setSelectedShipping] = useState(SHIPPING_OPTIONS[0].id);
+  const [selectedShipping, setSelectedShipping] = useState('');
   const [bulkInput, setBulkInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    loadPhoneModels();
+    loadData();
   }, []);
 
-  const loadPhoneModels = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const { data: phoneData, error } = await supabase
+      // Load phone models
+      const { data: phoneData, error: phoneError } = await supabase
         .from('phone_models')
         .select('*')
         .eq('is_active', true)
         .order('name');
 
-      if (error) {
-        console.error('Error loading phone models:', error);
+      if (phoneError) {
+        console.error('Error loading phone models:', phoneError);
       } else {
         setPhoneModels(phoneData || []);
       }
+
+      // Load shipping methods
+      const shippingData = await getShippingMethods(true);
+      setShippingMethods(shippingData);
+      
+      // Set default shipping method if available
+      if (shippingData.length > 0 && !selectedShipping) {
+        setSelectedShipping(shippingData[0].id);
+      }
+
+      // Load user balance
+      const balance = await getUserBalance(currentUser.email);
+      setUserBalance(balance);
     } catch (error) {
-      console.error('Error loading phone models:', error);
+      console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
@@ -77,7 +93,7 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
   const phoneModel = phoneModels.find(m => m.id === design.phoneModel);
   const unitPrice = phoneModel?.price || 0;
   const subtotal = unitPrice * quantity;
-  const shippingOption = SHIPPING_OPTIONS.find(s => s.id === selectedShipping);
+  const shippingOption = shippingMethods.find(s => s.id === selectedShipping);
   const shippingCost = shippingOption?.price || 0;
   const tax = subtotal * 0.08; // 8% tax
   const total = subtotal + shippingCost + tax;
@@ -162,10 +178,51 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
       return;
     }
 
+    // Check if user has sufficient balance (reload from database to be sure)
+    const currentBalance = await getUserBalance(currentUser.email);
+    setUserBalance(currentBalance);
+    
+    if (currentBalance < total) {
+      alert(
+        `${t(language, 'insufficientFundsMessage')}\n\n` +
+        `${t(language, 'orderTotal')}: €${total.toFixed(2)}\n` +
+        `${t(language, 'yourBalance')}: €${currentBalance.toFixed(2)}\n\n` +
+        `${t(language, 'pleaseTopUp')}`
+      );
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Deduct balance for the order
+      const transactionId = `ORDER-${Date.now()}`;
+      console.log('Creating transaction:', { userEmail: currentUser.email, amount: -total, transactionId });
+      
+      const deductionSuccess = await createPaymentTransaction(
+        currentUser.email,
+        -total, // Negative amount for deduction (requires database update to remove positive_amount constraint)
+        transactionId,
+        'manual_deduct',
+        undefined, // No admin for user orders
+        `Order payment for design: ${design.name}`
+      );
+
+      console.log('Transaction result:', deductionSuccess);
+
+      if (!deductionSuccess) {
+        throw new Error(t(language, 'orderProcessingError'));
+      }
+
+      // Wait a moment for the database trigger to process
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Reload the actual balance from database to ensure accuracy
+      const updatedBalance = await getUserBalance(currentUser.email);
+      console.log('Updated balance:', updatedBalance);
+      setUserBalance(updatedBalance);
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       const shippingAddress = [
         customerInfo.name,
@@ -204,10 +261,17 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
       };
 
       onCreateOrder(order);
-      alert(`Order placed successfully! Order ID: ${order.id}\nYou will receive a confirmation email shortly.`);
+      
+      // Trigger a balance refresh event for BalancePill to pick up
+      window.dispatchEvent(new CustomEvent('balanceChanged', { 
+        detail: { userEmail: currentUser.email } 
+      }));
+      
+      alert(`${t(language, 'orderPlacedSuccessfully')} ${order.id}\n${t(language, 'confirmationEmailSent')}`);
       onClose();
     } catch (error) {
-      alert('Payment failed. Please try again.');
+      console.error('Order processing error:', error);
+      alert(t(language, 'orderProcessingError'));
     } finally {
       setIsProcessing(false);
     }
@@ -400,9 +464,10 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
                 <SelectValue placeholder={t(language, 'selectShippingMethod')} />
               </SelectTrigger>
               <SelectContent>
-                {SHIPPING_OPTIONS.map((option) => (
+                {shippingMethods.map((option) => (
                   <SelectItem key={option.id} value={option.id}>
-                    {option.name} - ${option.price.toFixed(2)}
+                    {option.name} - €{option.price.toFixed(2)}
+                    {option.estimated_days && ` (${option.estimated_days} ${t(language, 'businessDaysShort')})`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -413,21 +478,32 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm">
               <span>{t(language, 'subtotal')}</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>€{subtotal.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span>{t(language, 'shipping')} ({shippingOption?.name})</span>
-              <span>${shippingCost.toFixed(2)}</span>
+              <span>€{shippingCost.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span>{t(language, 'tax')} (8%)</span>
-              <span>${tax.toFixed(2)}</span>
+              <span>€{tax.toFixed(2)}</span>
             </div>
             <Separator />
             <div className="flex items-center justify-between font-medium">
               <span>{t(language, 'total')}</span>
-              <span>${total.toFixed(2)}</span>
+              <span>€{total.toFixed(2)}</span>
             </div>
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>{t(language, 'yourBalance')}</span>
+              <span className={userBalance >= total ? 'text-green-600' : 'text-red-600'}>
+                €{userBalance.toFixed(2)}
+              </span>
+            </div>
+            {userBalance < total && (
+              <div className="text-sm text-red-600 text-center mt-2">
+                {t(language, 'insufficientFunds')} - {t(language, 'pleaseTopUp')}
+              </div>
+            )}
           </div>
 
           {/* Submit Button */}
@@ -436,12 +512,18 @@ export function OrderPreview({ design, onCreateOrder, onClose, currentUser, lang
             size="lg"
             onClick={handleSubmitOrder}
             disabled={isProcessing || !customerInfo.name || !customerInfo.address1 || 
-                     !customerInfo.city || !customerInfo.zipCode || !customerInfo.country}
+                     !customerInfo.city || !customerInfo.zipCode || !customerInfo.country ||
+                     userBalance < total}
           >
             {isProcessing ? (
               <span className="flex items-center gap-2">
                 <span className="animate-spin">○</span>
                 {t(language, 'processingOrder')}
+              </span>
+            ) : userBalance < total ? (
+              <span className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                {t(language, 'insufficientFunds')} - {t(language, 'topUp')}
               </span>
             ) : (
               <span className="flex items-center gap-2">

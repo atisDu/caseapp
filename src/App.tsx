@@ -533,6 +533,7 @@ export default function App() {
                 onUpdateOrderStatus={updateOrderStatus}
                 designs={designs}
                 language={language}
+                user={currentUser!}
               />
             </TabsContent>
           )}

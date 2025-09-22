@@ -5,6 +5,7 @@ import { Label } from './ui/label';
 import { Smartphone, Shield, Languages, LogOut } from 'lucide-react';
 import { User } from '../App';
 import { Language, t } from '../utils/translations';
+import { BalancePill } from './BalancePill';
 
 interface HeaderProps {
   user: User;
@@ -29,6 +30,9 @@ export function Header({ user, onLogout, language, onToggleLanguage }: HeaderPro
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
+            {/* Balance Pill */}
+            <BalancePill userEmail={user.email} language={language} />
+
             {/* Language Toggle */}
             <Button
               variant="outline"
