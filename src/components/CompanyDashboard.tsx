@@ -11,7 +11,7 @@ import {
   Building, 
   Package, 
   TrendingUp, 
-  DollarSign, 
+  Euro, 
   Users, 
   Clock,
   CheckCircle,
@@ -20,7 +20,8 @@ import {
   Calendar,
   Filter,
   Eye,
-  Download
+  Download,
+  LucideEuro
 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { PhoneCaseMockup } from './PhoneCaseMockup';
@@ -113,57 +114,6 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-green-600" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">{t(language, 'totalRevenue')}</p>
-                    <p className="text-2xl font-bold">${totalRevenue.toFixed(2)}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2">
-                  <Package className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Orders</p>
-                    <p className="text-2xl font-bold">{orders.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-yellow-600" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Pending Orders</p>
-                    <p className="text-2xl font-bold">{pendingOrders}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-purple-600" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Designs Created</p>
-                    <p className="text-2xl font-bold">{designs.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
           {/* Order Status Overview */}
           <Card>
             <CardHeader>
@@ -193,6 +143,64 @@ export function CompanyDashboard({ orders, onUpdateOrderStatus, designs, languag
                 </div>
               </div>
             </CardContent>
+          </Card>
+
+          {/* Stats Cards */}
+          <Card>
+          <CardHeader>
+              <CardTitle>{t(language, 'allTimeOverview')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2">
+                  <Euro className="w-5 h-5 text-green-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t(language, 'totalRevenue')}</p>
+                    <p className="text-2xl font-bold">{totalRevenue.toFixed(2)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2">
+                  <Package className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t(language, 'totalOrders')}</p>
+                    <p className="text-2xl font-bold">{orders.length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-yellow-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t(language, 'pendingOrders')}</p>
+                    <p className="text-2xl font-bold">{pendingOrders}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-purple-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t(language, 'designsCreated')}</p>
+                    <p className="text-2xl font-bold">{designs.length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          </CardContent>
           </Card>
         </TabsContent>
 

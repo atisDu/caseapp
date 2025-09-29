@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Order } from '../App';
-import { Package, Calendar, DollarSign, Truck, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Package, Calendar, DollarSign, Truck, CheckCircle, Clock, AlertCircle, Smartphone } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { PhoneCaseMockup } from './PhoneCaseMockup';
 import { Language, t, getPhoneModelDisplayName } from '../utils/translations';
@@ -88,7 +88,7 @@ export function OrderHistory({ orders, onUpdateOrder, language }: OrderHistoryPr
                     <div className="flex items-start justify-between">
                       <div>
                         <h3 className="font-semibold">{order.design.name}</h3>
-                        <p className="text-sm text-muted-foreground">Order #{order.id}</p>
+                        <p className="text-sm text-muted-foreground">{t(language, 'order')} #{order.id}</p>
                       </div>
                       <Badge className={statusConfig.color}>
                         <StatusIcon className="w-3 h-3 mr-1" />
@@ -98,13 +98,13 @@ export function OrderHistory({ orders, onUpdateOrder, language }: OrderHistoryPr
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-muted-foreground" />
+                        <Smartphone className="w-4 h-4 text-muted-foreground" />
                         <span>
-                          {getPhoneModelDisplayName(language, order.design.phoneModel)} × {order.quantity}
+                          {getPhoneModelDisplayName(language, order.design.phoneModel)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4 text-muted-foreground" />
+                        <Package className="w-4 h-4 text-muted-foreground" />
                         <span>{t(language, 'orderQuantity')}: {order.quantity}</span>
                       </div>
                       <div className="flex items-center gap-2">

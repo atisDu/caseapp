@@ -1,3 +1,5 @@
+import { totalmem } from "os";
+
 export const translations = {
   lv: {
     // Order Status
@@ -15,6 +17,7 @@ export const translations = {
     designStudio: 'Dizaini',
     design: 'Dizains',
     orders: 'Pasūtījumi',
+    order: "Pasūtījums",
     profile: 'Profils',
     company: 'Uzņēmums',
     
@@ -131,13 +134,15 @@ export const translations = {
     companyDashboard: 'Uzņēmuma vadības panelis',
     allOrders: 'Visi pasūtījumi',
     totalRevenue: 'Kopējie ieņēmumi',
+    totalOrders: 'Kopējie pasūtījumi',
     pendingOrders: 'Gaida pasūtījumi',
     completedOrders: 'Pabeigti pasūtījumi',
     markAs: 'Atzīmēt kā',
     designDetails: 'Dizaina detaļas',
     customerDetails: 'Klienta informācija',
     phoneCase: 'Telefona vāciņš',
-    orderStatusOverview: 'Pasūtījumu statusa pārskats',
+    orderStatusOverview: 'Pasūtījumu statusi',
+    allTimeOverview: 'Kopējais pārskats',
     allStatus: 'Visi statusi',
     newestFirst: 'Jaunākie vispirms',
     oldestFirst: 'Vecākie vispirms',
@@ -341,6 +346,7 @@ export const translations = {
     designStudio: 'Design Studio',
     design: 'Design',
     orders: 'Orders',
+    order: "Order",
     profile: 'Profile',
     company: 'Company',
     
@@ -462,6 +468,7 @@ export const translations = {
     companyDashboard: 'Company Dashboard',
     allOrders: 'All Orders',
     totalRevenue: 'Total Revenue',
+    totalOrders: 'Total Orders',
     pendingOrders: 'Pending Orders',
     completedOrders: 'Completed Orders',
     markAs: 'Mark as',
@@ -469,6 +476,7 @@ export const translations = {
     customerDetails: 'Customer Information',
     phoneCase: 'Phone Case',
     orderStatusOverview: 'Order Status Overview',
+    allTimeOverview: 'All-Time Overview',
     allStatus: 'All Status',
     newestFirst: 'Newest First',
     oldestFirst: 'Oldest First',
